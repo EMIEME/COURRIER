@@ -1,0 +1,87 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Tableau de bord{% endblock %}
+
+{% block body %}
+    <div class="topbar">
+        <div>
+            <h1>Tableau de bord</h1>
+            <p>Vue d'ensemble des courriers recus, envoyes et a traiter.</p>
+        </div>
+        {% if is_granted('ROLE_SECRETARIAT') %}
+            <div class="actions">
+                <a class="button" href="{{ path('app_courrier_new') }}">Nouveau courrier</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <section class="grid stats">
+        <article class="card stat">
+            <span>Recus</span>
+            <strong>{{ directionStats.entrant }}</strong>
+        </article>
+        <article class="card stat">
+            <span>Envoyes</span>
+            <strong>{{ directionStats.sortant }}</strong>
+        </article>
+        <article class="card stat">
+            <span>Notes internes</span>
+            <strong>{{ directionStats.note_interne }}</strong>
+        </article>
+        <article class="card stat">
+            <span>En cours</span>
+            <strong>{{ statusStats.en_cours }}</strong>
+        </article>
+        <article class="card stat">
+            <span>Traites</span>
+            <strong>{{ statusStats.traite }}</strong>
+        </article>
+        <article class="card stat">
+            <span>Urgents</span>
+            <strong>{{ statusStats.urgent }}</strong>
+        </article>
+    </section>
+
+    <section class="grid two">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Objet</th>
+                        <th>Emetteur</th>
+                        <th>Statut</th>
+                        <th>Impute a</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for courrier in recentCourriers %}
+                    <tr>
+                        <td>{{ courrier.mailDate|date('d/m/Y') }}</td>
+                        <td><a href="{{ path('app_courrier_show', {id: courrier.id}) }}"><strong>{{ courrier.subject }}</strong></a></td>
+                        <td>{{ courrier.senderLabel }}</td>
+                        <td><span class="badge {{ courrier.status }}">{{ courrier.statusLabel }}</span></td>
+                        <td>{{ courrier.assignedToLabel }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5" class="muted">Aucun courrier enregistre.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <aside class="card">
+            <h2>Courriers urgents</h2>
+            <div class="grid">
+                {% for courrier in urgentCourriers|slice(0, 6) %}
+                    <a href="{{ path('app_courrier_show', {id: courrier.id}) }}">
+                        <strong>{{ courrier.subject }}</strong><br>
+                        <span class="muted">{{ courrier.senderLabel }} - {{ courrier.mailDate|date('d/m/Y') }}</span>
+                    </a>
+                {% else %}
+                    <p>Aucun courrier urgent.</p>
+                {% endfor %}
+            </div>
+        </aside>
+    </section>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Destinataires{% endblock %}
+
+{% block body %}
+    <div class="topbar">
+        <div>
+            <h1>Destinataires</h1>
+            <p>Referentiel utilise par le champ destinataire des courriers.</p>
+        </div>
+        <div class="actions">
+            <a class="button" href="{{ path('app_destinataire_new') }}">Ajouter un destinataire</a>
+        </div>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Nom</th>
+                    <th>Service</th>
+                    <th>Email</th>
+                    <th>Courriers</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for destinataire in destinataires %}
+                <tr>
+                    <td><strong>{{ destinataire.name }}</strong></td>
+                    <td>{{ destinataire.service ?: '-' }}</td>
+                    <td>{{ destinataire.email ?: '-' }}</td>
+                    <td>{{ destinataire.courriers|length }}</td>
+                    <td>
+                        <div class="actions">
+                            <a class="button secondary" href="{{ path('app_destinataire_edit', {id: destinataire.id}) }}">Modifier</a>
+                            <form method="post" action="{{ path('app_destinataire_delete', {id: destinataire.id}) }}" onsubmit="return confirm('Supprimer ce destinataire ? Les courriers existants seront conserves.');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete-destinataire' ~ destinataire.id) }}">
+                                <button class="danger" type="submit">Supprimer</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="5" class="muted">Aucun destinataire.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

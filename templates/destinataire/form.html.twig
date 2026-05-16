@@ -1,0 +1,30 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block body %}
+    <div class="topbar">
+        <div>
+            <h1>{{ title }}</h1>
+            <p>Nom, service et email de contact.</p>
+        </div>
+        <div class="actions">
+            <a class="button secondary" href="{{ path('app_destinataire_index') }}">Retour</a>
+        </div>
+    </div>
+
+    <div class="form-panel">
+        {{ form_start(form) }}
+            {{ form_errors(form) }}
+            <div class="form-grid">
+                <div>{{ form_row(form.name) }}</div>
+                <div>{{ form_row(form.service) }}</div>
+                <div>{{ form_row(form.email) }}</div>
+            </div>
+            <div class="form-actions">
+                <button type="submit">{{ button_label }}</button>
+                <a class="button secondary" href="{{ path('app_destinataire_index') }}">Annuler</a>
+            </div>
+        {{ form_end(form) }}
+    </div>
+{% endblock %}

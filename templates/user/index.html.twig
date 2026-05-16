@@ -1,0 +1,52 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Utilisateurs{% endblock %}
+
+{% block body %}
+    <div class="topbar">
+        <div>
+            <h1>Utilisateurs</h1>
+            <p>Gestion des comptes et des roles applicatifs.</p>
+        </div>
+        <div class="actions">
+            <a class="button" href="{{ path('app_user_new') }}">Nouvel utilisateur</a>
+        </div>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Nom</th>
+                    <th>Email</th>
+                    <th>Service</th>
+                    <th>Roles</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for user in users %}
+                <tr>
+                    <td><strong>{{ user.fullName }}</strong></td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.service ?: '-' }}</td>
+                    <td>{{ user.roles|join(', ') }}</td>
+                    <td>
+                        <div class="actions">
+                            <a class="button secondary" href="{{ path('app_user_edit', {id: user.id}) }}">Modifier</a>
+                            {% if app.user != user %}
+                                <form method="post" action="{{ path('app_user_delete', {id: user.id}) }}" onsubmit="return confirm('Supprimer cet utilisateur ?');">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete-user' ~ user.id) }}">
+                                    <button class="danger" type="submit">Supprimer</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="5" class="muted">Aucun utilisateur.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block body %}
+    <div class="topbar">
+        <div>
+            <h1>{{ title }}</h1>
+            <p>Informations, scan/PDF, imputation et suivi de reponse.</p>
+        </div>
+        <div class="actions">
+            <a class="button secondary" href="{{ path('app_courrier_index') }}">Retour</a>
+        </div>
+    </div>
+
+    <div class="form-panel">
+        {{ form_start(form, {attr: {'data-courrier-form': 'true', class: 'professional-form'}}) }}
+            {{ form_errors(form) }}
+            <section class="form-section">
+                <div class="form-section__header">
+                    <h2>Identification</h2>
+                    <p>Sens, date, typologie et statut de traitement.</p>
+                </div>
+                <div class="form-grid">
+                    <div>{{ form_row(form.mailDate) }}</div>
+                    <div>
+                        {{ form_label(form.direction) }}
+                        {{ form_widget(form.direction, {attr: {'data-direction-field': 'true'}}) }}
+                        {{ form_errors(form.direction) }}
+                    </div>
+                    <div>{{ form_row(form.type) }}</div>
+                    <div>{{ form_row(form.status) }}</div>
+                </div>
+            </section>
+
+            <section class="form-section">
+                <div class="form-section__header">
+                    <h2>Contacts</h2>
+                    <p>Le champ affiche l'emetteur ou les destinataires selon le sens selectionne.</p>
+                </div>
+                <div class="form-grid">
+                    <div data-visible-for="entrant">
+                        {{ form_label(form.senderContact) }}
+                        {{ form_errors(form.senderContact) }}
+                        {{ form_widget(form.senderContact, {
+                            attr: {
+                                class: 'single-emetteur-select sr-only-select',
+                                'data-autocomplete-select': 'true',
+                                'data-placeholder': 'Rechercher un emetteur'
+                            }
+                        }) }}
+                    </div>
+                    <div data-visible-for="sortant">
+                        {{ form_label(form.destinataires) }}
+                        {{ form_errors(form.destinataires) }}
+                        {{ form_widget(form.destinataires, {
+                            attr: {
+                                class: 'multi-destinataire-select sr-only-select',
+                                'data-autocomplete-select': 'true',
+                                'data-placeholder': 'Rechercher un destinataire'
+                            }
+                        }) }}
+                    </div>
+                    <div>
+                        {{ form_label(form.assignedTo) }}
+                        {{ form_errors(form.assignedTo) }}
+                        {{ form_widget(form.assignedTo, {
+                            attr: {
+                                class: 'multi-imputation-select sr-only-select',
+                                'data-autocomplete-select': 'true',
+                                'data-placeholder': 'Rechercher une personne'
+                            }
+                        }) }}
+                    </div>
+                    <div>{{ form_row(form.responseDueAt) }}</div>
+                </div>
+            </section>
+
+            <section class="form-section">
+                <div class="form-section__header">
+                    <h2>Contenu</h2>
+                    <p>Objet, mots-cles, suivi et document numerise.</p>
+                </div>
+                <div class="form-grid">
+                    <div class="full">{{ form_row(form.subject) }}</div>
+                    <div class="full">{{ form_row(form.content) }}</div>
+                    <div class="full">{{ form_row(form.responseNotes) }}</div>
+                    <div class="full">
+                        {{ form_row(form.attachment) }}
+                        {% if courrier.attachmentFilename %}
+                            <p>Piece actuelle: <a href="{{ asset('uploads/courriers/' ~ courrier.attachmentFilename) }}" target="_blank">{{ courrier.attachmentFilename }}</a></p>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+            <div class="form-actions">
+                <button type="submit">{{ button_label }}</button>
+                <a class="button secondary" href="{{ path('app_courrier_index') }}">Annuler</a>
+            </div>
+        {{ form_end(form) }}
+    </div>
+{% endblock %}

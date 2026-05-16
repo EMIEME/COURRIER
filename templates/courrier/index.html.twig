@@ -1,0 +1,109 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Courriers{% endblock %}
+
+{% block body %}
+    <div class="topbar">
+        <div>
+            <h1>Courriers</h1>
+            <p>Recherche multicritere par date, emetteur, statut, imputation et contenu.</p>
+        </div>
+        {% if is_granted('ROLE_SECRETARIAT') %}
+            <div class="actions">
+                <a class="button" href="{{ path('app_courrier_new') }}">Enregistrer un courrier</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <form class="form-panel" method="get" action="{{ path('app_courrier_index') }}" style="margin-bottom: 16px;">
+        <div class="filters">
+            <div>
+                <label for="q">Mots-cles</label>
+                <input id="q" name="q" value="{{ filters.q|default('') }}">
+            </div>
+            <div>
+                <label for="sender">Emetteur</label>
+                <input id="sender" name="sender" value="{{ filters.sender|default('') }}">
+            </div>
+            <div>
+                <label for="status">Statut</label>
+                <select id="status" name="status">
+                    <option value="">Tous</option>
+                    {% for label, value in statuses %}
+                        <option value="{{ value }}" {{ filters.status|default('') == value ? 'selected' : '' }}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="direction">Sens</label>
+                <select id="direction" name="direction">
+                    <option value="">Tous</option>
+                    {% for label, value in directions %}
+                        <option value="{{ value }}" {{ filters.direction|default('') == value ? 'selected' : '' }}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="type">Type</label>
+                <select id="type" name="type">
+                    <option value="">Tous</option>
+                    {% for label, value in types %}
+                        <option value="{{ value }}" {{ filters.type|default('') == value ? 'selected' : '' }}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="dateFrom">Du</label>
+                <input type="date" id="dateFrom" name="dateFrom" value="{{ filters.dateFrom|default('') }}">
+            </div>
+            <div>
+                <label for="dateTo">Au</label>
+                <input type="date" id="dateTo" name="dateTo" value="{{ filters.dateTo|default('') }}">
+            </div>
+            <div>
+                <label for="assignedTo">Impute a</label>
+                <select id="assignedTo" name="assignedTo">
+                    <option value="">Tous</option>
+                    {% for user in users %}
+                        <option value="{{ user.id }}" {{ filters.assignedTo|default('') == user.id ? 'selected' : '' }}>{{ user.fullName }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="align-self: end;" class="actions">
+                <button type="submit">Rechercher</button>
+                <a class="button secondary" href="{{ path('app_courrier_index') }}">Reinitialiser</a>
+            </div>
+        </div>
+    </form>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Sens</th>
+                    <th>Objet</th>
+                    <th>Emetteur</th>
+                    <th>Type</th>
+                    <th>Statut</th>
+                    <th>Imputation</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for courrier in courriers %}
+                <tr>
+                    <td>{{ courrier.mailDate|date('d/m/Y') }}</td>
+                    <td>{{ courrier.directionLabel }}</td>
+                    <td><a href="{{ path('app_courrier_show', {id: courrier.id}) }}"><strong>{{ courrier.subject }}</strong></a></td>
+                    <td>{{ courrier.senderLabel }}</td>
+                    <td>{{ courrier.type }}</td>
+                    <td><span class="badge {{ courrier.status }}">{{ courrier.statusLabel }}</span></td>
+                    <td>{{ courrier.assignedToLabel }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="7" class="muted">Aucun resultat.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

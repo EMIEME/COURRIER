@@ -1,0 +1,74 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ courrier.subject }}{% endblock %}
+
+{% block body %}
+    <div class="topbar">
+        <div>
+            <h1>{{ courrier.subject }}</h1>
+            <p>{{ courrier.senderLabel }} - {{ courrier.mailDate|date('d/m/Y') }}</p>
+        </div>
+        <div class="actions">
+            <a class="button secondary" href="{{ path('app_courrier_index') }}">Retour</a>
+            {% if is_granted('ROLE_SECRETARIAT') %}
+                <a class="button" href="{{ path('app_courrier_edit', {id: courrier.id}) }}">Modifier</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <section class="grid two">
+        <article class="card">
+            <h2>Informations</h2>
+            <dl class="detail-list">
+                <div><dt>Statut</dt><dd><span class="badge {{ courrier.status }}">{{ courrier.statusLabel }}</span></dd></div>
+                <div><dt>Sens</dt><dd>{{ courrier.directionLabel }}</dd></div>
+                <div><dt>Type</dt><dd>{{ courrier.type }}</dd></div>
+                <div><dt>Emetteur</dt><dd>{{ courrier.senderLabel }}</dd></div>
+                <div><dt>Destinataire</dt><dd>{{ courrier.recipientLabel }}</dd></div>
+                <div><dt>Contenu</dt><dd>{{ courrier.content ? courrier.content|nl2br : 'Aucun contenu indexe.' }}</dd></div>
+                <div><dt>Piece jointe</dt><dd>
+                    {% if courrier.attachmentFilename %}
+                        <a class="button secondary" href="{{ asset('uploads/courriers/' ~ courrier.attachmentFilename) }}" target="_blank">Ouvrir le document</a>
+                    {% else %}
+                        <span class="muted">Aucune piece jointe.</span>
+                    {% endif %}
+                </dd></div>
+            </dl>
+        </article>
+
+        <aside class="form-panel">
+            <h2>Workflow</h2>
+            <form method="post" action="{{ path('app_courrier_assign', {id: courrier.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('assign' ~ courrier.id) }}">
+                <div style="margin-bottom: 12px;">
+                    <label for="assignedTo">Imputer a</label>
+                    <select id="assignedTo" name="assignedTo[]" class="sr-only-select" data-autocomplete-select="true" data-placeholder="Rechercher une personne" multiple>
+                        {% for user in users %}
+                            <option value="{{ user.id }}" {{ courrier.assignedTo.contains(user) ? 'selected' : '' }}>{{ user.fullName }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <label for="status">Statut</label>
+                    <select id="status" name="status">
+                        {% for label, value in statuses %}
+                            <option value="{{ value }}" {{ courrier.status == value ? 'selected' : '' }}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <label for="responseNotes">Suivi / reponse</label>
+                    <textarea id="responseNotes" name="responseNotes" rows="6">{{ courrier.responseNotes }}</textarea>
+                </div>
+                <button type="submit">Mettre a jour le suivi</button>
+            </form>
+
+            {% if is_granted('ROLE_ADMIN') %}
+                <form method="post" action="{{ path('app_courrier_delete', {id: courrier.id}) }}" style="margin-top: 14px;" onsubmit="return confirm('Supprimer ce courrier ?');">
+                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ courrier.id) }}">
+                    <button class="danger" type="submit">Supprimer</button>
+                </form>
+            {% endif %}
+        </aside>
+    </section>
+{% endblock %}
