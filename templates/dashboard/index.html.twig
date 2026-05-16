@@ -15,31 +15,65 @@
         {% endif %}
     </div>
 
+    <form class="form-panel" method="get" action="{{ path('app_dashboard') }}" style="margin-bottom: 16px;">
+        <div class="filters">
+            <div>
+                <label for="dateFrom">Date de debut</label>
+                <input type="date" id="dateFrom" name="dateFrom" value="{{ filters.dateFrom|default('') }}">
+            </div>
+            <div>
+                <label for="dateTo">Date de fin</label>
+                <input type="date" id="dateTo" name="dateTo" value="{{ filters.dateTo|default('') }}">
+            </div>
+            <div style="align-self: end;" class="actions">
+                {% if filters.status|default('') %}
+                    <input type="hidden" name="status" value="{{ filters.status }}">
+                {% endif %}
+                {% if filters.direction|default('') %}
+                    <input type="hidden" name="direction" value="{{ filters.direction }}">
+                {% endif %}
+                <button type="submit">Filtrer</button>
+                <a class="button secondary" href="{{ path('app_dashboard') }}">Reinitialiser</a>
+            </div>
+        </div>
+    </form>
+
+    {% set periodParams = {
+        dateFrom: filters.dateFrom|default(''),
+        dateTo: filters.dateTo|default('')
+    } %}
+    {% set paginationParams = {
+        dateFrom: filters.dateFrom|default(''),
+        dateTo: filters.dateTo|default(''),
+        status: filters.status|default(''),
+        direction: filters.direction|default('')
+    } %}
+
     <section class="grid stats">
-        <article class="card stat">
+        <a class="card stat stat--received {{ filters.direction|default('') == 'entrant' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({direction: 'entrant'})) }}">
             <span>Recus</span>
             <strong>{{ directionStats.entrant }}</strong>
-        </article>
-        <article class="card stat">
+        </a>
+        <a class="card stat stat--sent {{ filters.direction|default('') == 'sortant' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({direction: 'sortant'})) }}">
             <span>Envoyes</span>
             <strong>{{ directionStats.sortant }}</strong>
-        </article>
-        <article class="card stat">
+        </a>
+        <a class="card stat stat--internal {{ filters.direction|default('') == 'note_interne' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({direction: 'note_interne'})) }}">
             <span>Notes internes</span>
             <strong>{{ directionStats.note_interne }}</strong>
-        </article>
-        <article class="card stat">
+        </a>
+        <a class="card stat stat--progress {{ filters.status|default('') == 'en_cours' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({status: 'en_cours'})) }}">
             <span>En cours</span>
             <strong>{{ statusStats.en_cours }}</strong>
-        </article>
-        <article class="card stat">
+        </a>
+        <a class="card stat stat--done {{ filters.status|default('') == 'traite' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({status: 'traite'})) }}">
             <span>Traites</span>
             <strong>{{ statusStats.traite }}</strong>
-        </article>
-        <article class="card stat">
+        </a>
+        <a class="card stat stat--urgent {{ filters.status|default('') == 'urgent' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({status: 'urgent'})) }}">
             <span>Urgents</span>
             <strong>{{ statusStats.urgent }}</strong>
-        </article>
+        </a>
     </section>
 
     <section class="grid two">
@@ -55,7 +89,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                {% for courrier in recentCourriers %}
+                {% for courrier in filteredCourriers %}
                     <tr>
                         <td>{{ courrier.mailDate|date('d/m/Y') }}</td>
                         <td><a href="{{ path('app_courrier_show', {id: courrier.id}) }}"><strong>{{ courrier.subject }}</strong></a></td>
@@ -64,10 +98,24 @@
                         <td>{{ courrier.assignedToLabel }}</td>
                     </tr>
                 {% else %}
-                    <tr><td colspan="5" class="muted">Aucun courrier enregistre.</td></tr>
+                    <tr><td colspan="5" class="muted">Aucun courrier pour ce filtre.</td></tr>
                 {% endfor %}
                 </tbody>
             </table>
+            <div class="pagination">
+                <span>
+                    {{ pagination.total }} courrier{{ pagination.total > 1 ? 's' : '' }}
+                    - page {{ pagination.page }} / {{ pagination.totalPages }}
+                </span>
+                <div class="actions">
+                    {% if pagination.page > 1 %}
+                        <a class="button secondary" href="{{ path('app_dashboard', paginationParams|merge({page: pagination.page - 1})) }}">Precedent</a>
+                    {% endif %}
+                    {% if pagination.page < pagination.totalPages %}
+                        <a class="button secondary" href="{{ path('app_dashboard', paginationParams|merge({page: pagination.page + 1})) }}">Suivant</a>
+                    {% endif %}
+                </div>
+            </div>
         </div>
 
         <aside class="card">

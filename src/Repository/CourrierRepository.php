@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\Courrier;
 use App\Entity\User;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -63,12 +64,12 @@ class CourrierRepository extends ServiceEntityRepository
 
         if (!empty($filters['dateFrom'])) {
             $qb->andWhere('c.mailDate >= :dateFrom')
-                ->setParameter('dateFrom', new \DateTimeImmutable((string) $filters['dateFrom']));
+                ->setParameter('dateFrom', new \DateTimeImmutable((string) $filters['dateFrom']), Types::DATE_IMMUTABLE);
         }
 
         if (!empty($filters['dateTo'])) {
             $qb->andWhere('c.mailDate <= :dateTo')
-                ->setParameter('dateTo', new \DateTimeImmutable((string) $filters['dateTo']));
+                ->setParameter('dateTo', new \DateTimeImmutable((string) $filters['dateTo']), Types::DATE_IMMUTABLE);
         }
 
         return $qb->getQuery()->getResult();
@@ -77,13 +78,20 @@ class CourrierRepository extends ServiceEntityRepository
     /**
      * @return array<string, int>
      */
-    public function countByStatus(): array
+    /**
+     * @param array<string, mixed> $filters
+     *
+     * @return array<string, int>
+     */
+    public function countByStatus(array $filters = []): array
     {
-        $rows = $this->createQueryBuilder('c')
+        $qb = $this->createQueryBuilder('c')
             ->select('c.status AS status, COUNT(c.id) AS total')
-            ->groupBy('c.status')
-            ->getQuery()
-            ->getArrayResult();
+            ->groupBy('c.status');
+
+        $this->applyPeriodFilters($qb, $filters);
+
+        $rows = $qb->getQuery()->getArrayResult();
 
         $stats = [
             Courrier::STATUS_EN_COURS => 0,
@@ -99,15 +107,19 @@ class CourrierRepository extends ServiceEntityRepository
     }
 
     /**
+     * @param array<string, mixed> $filters
+     *
      * @return array<string, int>
      */
-    public function countByDirection(): array
+    public function countByDirection(array $filters = []): array
     {
-        $rows = $this->createQueryBuilder('c')
+        $qb = $this->createQueryBuilder('c')
             ->select('c.direction AS direction, COUNT(c.id) AS total')
-            ->groupBy('c.direction')
-            ->getQuery()
-            ->getArrayResult();
+            ->groupBy('c.direction');
+
+        $this->applyPeriodFilters($qb, $filters);
+
+        $rows = $qb->getQuery()->getArrayResult();
 
         $stats = [
             Courrier::DIRECTION_ENTRANT => 0,
@@ -120,5 +132,21 @@ class CourrierRepository extends ServiceEntityRepository
         }
 
         return $stats;
+    }
+
+    /**
+     * @param array<string, mixed> $filters
+     */
+    private function applyPeriodFilters(\Doctrine\ORM\QueryBuilder $qb, array $filters): void
+    {
+        if (!empty($filters['dateFrom'])) {
+            $qb->andWhere('c.mailDate >= :countDateFrom')
+                ->setParameter('countDateFrom', new \DateTimeImmutable((string) $filters['dateFrom']), Types::DATE_IMMUTABLE);
+        }
+
+        if (!empty($filters['dateTo'])) {
+            $qb->andWhere('c.mailDate <= :countDateTo')
+                ->setParameter('countDateTo', new \DateTimeImmutable((string) $filters['dateTo']), Types::DATE_IMMUTABLE);
+        }
     }
 }
