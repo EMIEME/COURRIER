@@ -19,6 +19,37 @@ class DestinataireRepository extends ServiceEntityRepository
     /**
      * @return list<Destinataire>
      */
+    public function searchPaginated(?string $query, int $page, int $limit): array
+    {
+        $qb = $this->createQueryBuilder('d')
+            ->orderBy('d.name', 'ASC')
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit);
+
+        if ($query) {
+            $qb->andWhere('LOWER(d.name) LIKE :query')
+                ->setParameter('query', '%'.mb_strtolower($query).'%');
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    public function countSearch(?string $query): int
+    {
+        $qb = $this->createQueryBuilder('d')
+            ->select('COUNT(d.id)');
+
+        if ($query) {
+            $qb->andWhere('LOWER(d.name) LIKE :query')
+                ->setParameter('query', '%'.mb_strtolower($query).'%');
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * @return list<Destinataire>
+     */
     public function findForAutocomplete(): array
     {
         return $this->createQueryBuilder('d')

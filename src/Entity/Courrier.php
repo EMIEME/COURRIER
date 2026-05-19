@@ -7,9 +7,11 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: CourrierRepository::class)]
+#[UniqueEntity(fields: ['reference'], message: 'Cette reference est deja utilisee.')]
 class Courrier
 {
     public const DIRECTION_ENTRANT = 'entrant';
@@ -21,20 +23,9 @@ class Courrier
     public const STATUS_URGENT = 'urgent';
 
     public const DIRECTIONS = [
-        'Courrier recu' => self::DIRECTION_ENTRANT,
-        'Courrier envoye' => self::DIRECTION_SORTANT,
+        'Arrivé' => self::DIRECTION_ENTRANT,
+        'Départ' => self::DIRECTION_SORTANT,
         'Note interne' => self::DIRECTION_INTERNE,
-    ];
-
-    public const TYPES = [
-        'Administratif' => 'Administratif',
-        'Facture' => 'Facture',
-        'Ressources humaines (RH)' => 'RH',
-        'Juridique' => 'Juridique',
-        'Technique' => 'Technique',
-        'Invitation' => 'Invitation',
-        'Rapport' => 'Rapport',
-        'Autre' => 'Autre',
     ];
 
     public const STATUSES = [
@@ -66,13 +57,26 @@ class Courrier
     #[ORM\Column(length: 160, nullable: true)]
     private ?string $recipient = null;
 
-    #[ORM\Column(length: 80)]
+    #[ORM\Column(length: 120, unique: true)]
     #[Assert\NotBlank]
-    private ?string $type = null;
+    private ?string $reference = null;
+
+    #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'replies')]
+    #[ORM\JoinColumn(onDelete: 'SET NULL')]
+    private ?self $replyTo = null;
+
+    /**
+     * @var Collection<int, Courrier>
+     */
+    #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'replyTo')]
+    private Collection $replies;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank]
     private ?string $subject = null;
+
+    #[ORM\Column(length: 160, nullable: true)]
+    private ?string $localisation = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $content = null;
@@ -102,6 +106,13 @@ class Courrier
     #[ORM\JoinColumn(onDelete: 'SET NULL')]
     private ?User $createdBy = null;
 
+    /**
+     * @var Collection<int, CourrierAction>
+     */
+    #[ORM\OneToMany(targetEntity: CourrierAction::class, mappedBy: 'courrier', orphanRemoval: true)]
+    #[ORM\OrderBy(['createdAt' => 'DESC'])]
+    private Collection $actionLogs;
+
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $responseDueAt = null;
 
@@ -119,6 +130,8 @@ class Courrier
         $this->mailDate = new \DateTimeImmutable();
         $this->assignedTo = new ArrayCollection();
         $this->destinataires = new ArrayCollection();
+        $this->replies = new ArrayCollection();
+        $this->actionLogs = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
     }
@@ -264,14 +277,62 @@ class Courrier
         return $this->sender ?: 'Non renseigne';
     }
 
-    public function getType(): ?string
+    public function getInterlocuteurLabel(): string
     {
-        return $this->type;
+        if (self::DIRECTION_ENTRANT === $this->direction) {
+            return $this->getSenderLabel();
+        }
+
+        return $this->getRecipientLabel();
     }
 
-    public function setType(string $type): self
+    public function getReference(): ?string
     {
-        $this->type = trim($type);
+        return $this->reference;
+    }
+
+    public function setReference(string $reference): self
+    {
+        $this->reference = trim($reference);
+
+        return $this;
+    }
+
+    public function getReplyTo(): ?self
+    {
+        return $this->replyTo;
+    }
+
+    public function setReplyTo(?self $replyTo): self
+    {
+        $this->replyTo = $replyTo === $this ? null : $replyTo;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Courrier>
+     */
+    public function getReplies(): Collection
+    {
+        return $this->replies;
+    }
+
+    public function addReply(self $reply): self
+    {
+        if (!$this->replies->contains($reply)) {
+            $this->replies->add($reply);
+            $reply->setReplyTo($this);
+        }
+
+        return $this;
+    }
+
+    public function removeReply(self $reply): self
+    {
+        if ($this->replies->removeElement($reply) && $reply->getReplyTo() === $this) {
+            $reply->setReplyTo(null);
+        }
 
         return $this;
     }
@@ -284,6 +345,18 @@ class Courrier
     public function setSubject(string $subject): self
     {
         $this->subject = trim($subject);
+
+        return $this;
+    }
+
+    public function getLocalisation(): ?string
+    {
+        return $this->localisation;
+    }
+
+    public function setLocalisation(?string $localisation): self
+    {
+        $this->localisation = $localisation ? trim($localisation) : null;
 
         return $this;
     }
@@ -386,6 +459,31 @@ class Courrier
     public function setCreatedBy(?User $createdBy): self
     {
         $this->createdBy = $createdBy;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, CourrierAction>
+     */
+    public function getActionLogs(): Collection
+    {
+        return $this->actionLogs;
+    }
+
+    public function addActionLog(CourrierAction $actionLog): self
+    {
+        if (!$this->actionLogs->contains($actionLog)) {
+            $this->actionLogs->add($actionLog);
+            $actionLog->setCourrier($this);
+        }
+
+        return $this;
+    }
+
+    public function removeActionLog(CourrierAction $actionLog): self
+    {
+        $this->actionLogs->removeElement($actionLog);
 
         return $this;
     }

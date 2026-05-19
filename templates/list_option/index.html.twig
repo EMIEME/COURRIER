@@ -1,0 +1,117 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Parametres des listes{% endblock %}
+
+{% block body %}
+    <div class="topbar page-band">
+        <div>
+            <h1>Parametres des listes</h1>
+            <p>Libelles et valeurs utilisees dans les formulaires de courrier.</p>
+        </div>
+    </div>
+
+    <section class="form-panel" style="margin-bottom: 18px;">
+        <h2>Ajouter une valeur</h2>
+        <form method="post" action="{{ path('app_list_option_new') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('new-list-option') }}">
+            <div class="form-grid">
+                <div>
+                    <label for="category">Liste</label>
+                    <select id="category" name="category" required>
+                        {% for category, label in categories %}
+                            {% if category in open_categories %}
+                                <option value="{{ category }}">{{ label }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="label">Libelle</label>
+                    <input id="label" name="label" required>
+                </div>
+                <div>
+                    <label for="value">Valeur technique</label>
+                    <input id="value" name="value" placeholder="Automatique si vide">
+                </div>
+                <div>
+                    <label for="position">Ordre</label>
+                    <input id="position" name="position" type="number" value="0">
+                </div>
+                <div style="align-self: end;">
+                    <button type="submit">Ajouter</button>
+                </div>
+            </div>
+        </form>
+    </section>
+
+    <div class="grid">
+        {% for category, label in categories %}
+            <section class="form-panel">
+                <div class="topbar" style="margin-bottom: 12px;">
+                    <div>
+                        <h2>{{ label }}</h2>
+                        {% if category not in open_categories %}
+                            <p>Valeurs techniques protegees. Vous pouvez modifier le libelle, l'ordre et l'activation.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Libelle</th>
+                                <th>Valeur</th>
+                                <th>Ordre</th>
+                                <th>Actif</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for option in groupedOptions[category] %}
+                                <tr>
+                                    <td colspan="5">
+                                        <form method="post" action="{{ path('app_list_option_edit', {id: option.id}) }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('edit-list-option' ~ option.id) }}">
+                                            <div class="filters">
+                                                <div>
+                                                    <label for="label-{{ option.id }}">Libelle</label>
+                                                    <input id="label-{{ option.id }}" name="label" value="{{ option.label }}" required>
+                                                </div>
+                                                <div>
+                                                    <label for="value-{{ option.id }}">Valeur</label>
+                                                    <input id="value-{{ option.id }}" name="value" value="{{ option.value }}" {{ option.locked ? 'readonly' : '' }}>
+                                                </div>
+                                                <div>
+                                                    <label for="position-{{ option.id }}">Ordre</label>
+                                                    <input id="position-{{ option.id }}" name="position" type="number" value="{{ option.position }}">
+                                                </div>
+                                                <div>
+                                                    <label for="active-{{ option.id }}">Actif</label>
+                                                    <input id="active-{{ option.id }}" name="active" type="checkbox" value="1" {{ option.active ? 'checked' : '' }}>
+                                                </div>
+                                                <div class="actions" style="align-self: end;">
+                                                    <button class="secondary" type="submit">Mettre a jour</button>
+                                                    {% if not option.locked %}
+                                                        <button class="danger" type="submit" form="delete-option-{{ option.id }}">Supprimer</button>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </form>
+                                        {% if not option.locked %}
+                                            <form id="delete-option-{{ option.id }}" method="post" action="{{ path('app_list_option_delete', {id: option.id}) }}" onsubmit="return confirm('Supprimer cette valeur ?');">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('delete-list-option' ~ option.id) }}">
+                                            </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="5" class="muted">Aucune valeur parametree.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        {% endfor %}
+    </div>
+{% endblock %}

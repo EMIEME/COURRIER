@@ -21,10 +21,27 @@
             <h2>Informations</h2>
             <dl class="detail-list">
                 <div><dt>Statut</dt><dd><span class="badge {{ courrier.status }}">{{ courrier.statusLabel }}</span></dd></div>
-                <div><dt>Sens</dt><dd>{{ courrier.directionLabel }}</dd></div>
-                <div><dt>Type</dt><dd>{{ courrier.type }}</dd></div>
+                <div><dt>Reference</dt><dd>{{ courrier.reference }}</dd></div>
+                {% if courrier.replyTo %}
+                    <div>
+                        <dt>Réponse au courrier</dt>
+                        <dd><a href="{{ path('app_courrier_show', {id: courrier.replyTo.id}) }}">{{ courrier.replyTo.reference }} - {{ courrier.replyTo.subject }}</a></dd>
+                    </div>
+                {% endif %}
+                <div><dt>Nature</dt><dd>{{ directionLabels[courrier.direction]|default(courrier.directionLabel) }}</dd></div>
                 <div><dt>Emetteur</dt><dd>{{ courrier.senderLabel }}</dd></div>
                 <div><dt>Destinataire</dt><dd>{{ courrier.recipientLabel }}</dd></div>
+                <div><dt>Localisation</dt><dd>{{ courrier.localisation ?: 'Non renseignee' }}</dd></div>
+                {% if courrier.replies|length > 0 %}
+                    <div>
+                        <dt>Réponses associées</dt>
+                        <dd>
+                            {% for reply in courrier.replies %}
+                                <a href="{{ path('app_courrier_show', {id: reply.id}) }}">{{ reply.reference }} - {{ reply.subject }}</a>{{ not loop.last ? ', ' : '' }}
+                            {% endfor %}
+                        </dd>
+                    </div>
+                {% endif %}
                 <div><dt>Contenu</dt><dd>{{ courrier.content ? courrier.content|nl2br : 'Aucun contenu indexe.' }}</dd></div>
                 <div><dt>Piece jointe</dt><dd>
                     {% if courrier.attachmentFilename %}
@@ -69,6 +86,27 @@
                     <button class="danger" type="submit">Supprimer</button>
                 </form>
             {% endif %}
+
+            <div style="margin-top: 22px;">
+                <h2>Historique</h2>
+                <div class="history-list">
+                    {% for action in courrier.actionLogs %}
+                        <article class="history-item {{ action.actionType }}">
+                            <div class="history-item__head">
+                                <strong>{{ action.typeLabel }}</strong>
+                                <time datetime="{{ action.createdAt|date('c') }}">{{ action.createdAt|date('d/m/Y H:i') }}</time>
+                            </div>
+                            <p>{{ action.summary }}</p>
+                            <p>Par {{ action.actor ? action.actor.fullName : 'Utilisateur supprime' }}</p>
+                            {% if action.details %}
+                                <pre>{{ action.details }}</pre>
+                            {% endif %}
+                        </article>
+                    {% else %}
+                        <p class="muted">Aucune action enregistree pour ce courrier.</p>
+                    {% endfor %}
+                </div>
+            </div>
         </aside>
     </section>
 {% endblock %}

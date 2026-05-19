@@ -5,8 +5,10 @@ namespace App\Form;
 use App\Entity\Courrier;
 use App\Entity\Destinataire;
 use App\Entity\User;
+use App\Repository\CourrierRepository;
 use App\Repository\DestinataireRepository;
 use App\Repository\UserRepository;
+use App\Service\CourrierListProvider;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -20,16 +22,25 @@ use Symfony\Component\Validator\Constraints\File;
 
 class CourrierType extends AbstractType
 {
+    public function __construct(private readonly CourrierListProvider $listProvider)
+    {
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        $courrier = $builder->getData();
+        $currentDirection = $courrier instanceof Courrier ? $courrier->getDirection() : null;
+        $currentStatus = $courrier instanceof Courrier ? $courrier->getStatus() : null;
+        $currentLocalisation = $courrier instanceof Courrier ? $courrier->getLocalisation() : null;
+
         $builder
             ->add('mailDate', DateType::class, [
                 'label' => 'Date du courrier',
                 'widget' => 'single_text',
             ])
             ->add('direction', ChoiceType::class, [
-                'label' => 'Sens',
-                'choices' => Courrier::DIRECTIONS,
+                'label' => 'Nature',
+                'choices' => $this->listProvider->natureChoices($currentDirection),
             ])
             ->add('senderContact', EntityType::class, [
                 'label' => 'Emetteur',
@@ -56,13 +67,41 @@ class CourrierType extends AbstractType
                 ],
                 'query_builder' => fn (DestinataireRepository $repository) => $repository->createQueryBuilder('d')->orderBy('d.name', 'ASC'),
             ])
-            ->add('type', ChoiceType::class, [
-                'label' => 'Type',
-                'choices' => Courrier::TYPES,
-                'placeholder' => 'Choisir un type',
+            ->add('reference', TextType::class, [
+                'label' => 'Reference',
+            ])
+            ->add('replyTo', EntityType::class, [
+                'label' => 'Réponse au courrier',
+                'class' => Courrier::class,
+                'choice_label' => fn (Courrier $courrier) => sprintf('%s - %s', $courrier->getReference(), $courrier->getSubject()),
+                'placeholder' => '',
+                'required' => false,
+                'attr' => [
+                    'class' => 'reply-to-select',
+                    'data-autocomplete-select' => 'true',
+                ],
+                'query_builder' => function (CourrierRepository $repository) use ($options) {
+                    $qb = $repository->createQueryBuilder('c')
+                        ->orderBy('c.reference', 'DESC');
+                    $currentCourrier = $options['current_courrier'];
+
+                    if ($currentCourrier instanceof Courrier && $currentCourrier->getId()) {
+                        $qb->andWhere('c.id != :currentCourrier')
+                            ->setParameter('currentCourrier', $currentCourrier->getId());
+                    }
+
+                    return $qb;
+                },
             ])
             ->add('subject', TextType::class, [
                 'label' => 'Objet',
+            ])
+            ->add('localisation', ChoiceType::class, [
+                'label' => 'Localisation',
+                'choices' => $this->listProvider->localisationChoices($currentLocalisation),
+                'placeholder' => 'Choisir une localisation',
+                'required' => false,
+                'help' => 'Boite ou lieu de rangement du courrier physique.',
             ])
             ->add('content', TextareaType::class, [
                 'label' => 'Contenu / mots-cles',
@@ -71,7 +110,7 @@ class CourrierType extends AbstractType
             ])
             ->add('status', ChoiceType::class, [
                 'label' => 'Statut',
-                'choices' => Courrier::STATUSES,
+                'choices' => $this->listProvider->statusChoices($currentStatus),
             ])
             ->add('assignedTo', EntityType::class, [
                 'label' => 'Imputer a',
@@ -114,6 +153,9 @@ class CourrierType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => Courrier::class,
+            'current_courrier' => null,
         ]);
+
+        $resolver->setAllowedTypes('current_courrier', [Courrier::class, 'null']);
     }
 }

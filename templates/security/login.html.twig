@@ -3,27 +3,89 @@
 {% block title %}Connexion{% endblock %}
 
 {% block body %}
-    <div style="max-width: 440px; margin: 8vh auto;">
-        <div class="form-panel">
-            <h1>Connexion</h1>
-            <p style="margin: 8px 0 18px;">Acces a la gestion des courriers.</p>
-
-            {% if error %}
-                <div class="flash error">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
-            {% endif %}
-
-            <form method="post">
-                <div style="margin-bottom: 12px;">
-                    <label for="username">Email</label>
-                    <input type="email" value="{{ last_username }}" name="_username" id="username" autocomplete="email" required autofocus>
+    <section class="login-page">
+        <div class="login-shell">
+            <div class="login-intro">
+                <div class="login-brand">
+                    <span class="login-brand__mark" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5z"/>
+                            <path d="m8 9 4 3 4-3"/>
+                            <path d="M8 15h8"/>
+                        </svg>
+                    </span>
+                    <span>Gestion Courrier</span>
                 </div>
-                <div style="margin-bottom: 16px;">
-                    <label for="password">Mot de passe</label>
-                    <input type="password" name="_password" id="password" autocomplete="current-password" required>
+
+                <h1>Accès sécurisé au registre des courriers</h1>
+                <p>Connectez-vous pour enregistrer, rechercher, imputer et suivre les courriers administratifs depuis un espace de travail centralisé.</p>
+
+                <div class="login-features" aria-label="Fonctionnalites principales">
+                    <div class="login-feature">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M4 5h16"/>
+                            <path d="M4 12h16"/>
+                            <path d="M4 19h10"/>
+                        </svg>
+                        <span>Registre consultable et exportable</span>
+                    </div>
+                    <div class="login-feature">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M9 12l2 2 4-4"/>
+                            <circle cx="12" cy="12" r="9"/>
+                        </svg>
+                        <span>Suivi des statuts, imputations et réponses</span>
+                    </div>
+                    <div class="login-feature">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 3v18"/>
+                            <path d="M5 8h14"/>
+                            <path d="M7 16h10"/>
+                        </svg>
+                        <span>Historique des actions et traçabilité</span>
+                    </div>
                 </div>
-                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-                <button type="submit">Se connecter</button>
-            </form>
+            </div>
+
+            <div class="login-card">
+                <div class="login-card__head">
+                    <h2>Connexion</h2>
+                    <p>Renseignez vos identifiants pour accéder à l'application.</p>
+                </div>
+
+                {% if error %}
+                    <div class="flash error">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
+                {% endif %}
+
+                <form class="login-form" method="post">
+                    <div class="login-field">
+                        <label for="username">Email</label>
+                        <div class="login-input">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5z"/>
+                                <path d="m8 9 4 3 4-3"/>
+                            </svg>
+                            <input type="email" value="{{ last_username }}" name="_username" id="username" autocomplete="email" required autofocus>
+                        </div>
+                    </div>
+                    <div class="login-field">
+                        <label for="password">Mot de passe</label>
+                        <div class="login-input">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="5" y="11" width="14" height="10" rx="2"/>
+                                <path d="M8 11V8a4 4 0 0 1 8 0v3"/>
+                            </svg>
+                            <input type="password" name="_password" id="password" autocomplete="current-password" required>
+                        </div>
+                    </div>
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                    <button class="login-submit" type="submit">Se connecter</button>
+                </form>
+
+                <div class="login-note">
+                    L'accès est réservé aux utilisateurs autorisés. Les actions importantes sont historisées pour assurer le suivi des courriers.
+                </div>
+            </div>
         </div>
-    </div>
+    </section>
 {% endblock %}

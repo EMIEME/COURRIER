@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Courrier;
+use App\Entity\Destinataire;
 use App\Entity\User;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -33,12 +34,12 @@ class CourrierRepository extends ServiceEntityRepository
             ->addOrderBy('c.id', 'DESC');
 
         if (!empty($filters['query'])) {
-            $qb->andWhere('LOWER(c.subject) LIKE :query OR LOWER(c.content) LIKE :query OR LOWER(c.sender) LIKE :query OR LOWER(c.recipient) LIKE :query')
+            $qb->andWhere('LOWER(c.reference) LIKE :query OR LOWER(c.subject) LIKE :query OR LOWER(c.content) LIKE :query OR LOWER(c.sender) LIKE :query OR LOWER(c.recipient) LIKE :query OR LOWER(c.localisation) LIKE :query')
                 ->setParameter('query', '%'.mb_strtolower((string) $filters['query']).'%');
         }
 
         if (!empty($filters['sender'])) {
-            $qb->andWhere('LOWER(c.sender) LIKE :sender')
+            $qb->andWhere('LOWER(c.sender) LIKE :sender OR LOWER(c.recipient) LIKE :sender')
                 ->setParameter('sender', '%'.mb_strtolower((string) $filters['sender']).'%');
         }
 
@@ -52,14 +53,14 @@ class CourrierRepository extends ServiceEntityRepository
                 ->setParameter('direction', $filters['direction']);
         }
 
-        if (!empty($filters['type'])) {
-            $qb->andWhere('c.type = :type')
-                ->setParameter('type', $filters['type']);
-        }
-
         if (!empty($filters['assignedTo']) && $filters['assignedTo'] instanceof User) {
             $qb->andWhere(':assignedTo MEMBER OF c.assignedTo')
                 ->setParameter('assignedTo', $filters['assignedTo']);
+        }
+
+        if (!empty($filters['destinataire']) && $filters['destinataire'] instanceof Destinataire) {
+            $qb->andWhere($qb->expr()->orX('c.senderContact = :destinataire', ':destinataire MEMBER OF c.destinataires'))
+                ->setParameter('destinataire', $filters['destinataire']);
         }
 
         if (!empty($filters['dateFrom'])) {
@@ -73,6 +74,16 @@ class CourrierRepository extends ServiceEntityRepository
         }
 
         return $qb->getQuery()->getResult();
+    }
+
+    public function countLinkedToDestinataire(Destinataire $destinataire): int
+    {
+        return (int) $this->createQueryBuilder('c')
+            ->select('COUNT(DISTINCT c.id)')
+            ->andWhere('c.senderContact = :destinataire OR :destinataire MEMBER OF c.destinataires')
+            ->setParameter('destinataire', $destinataire)
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 
     /**

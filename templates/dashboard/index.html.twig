@@ -51,27 +51,27 @@
 
     <section class="grid stats">
         <a class="card stat stat--received {{ filters.direction|default('') == 'entrant' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({direction: 'entrant'})) }}">
-            <span>Recus</span>
+            <span>{{ directionLabels.entrant|default('Arrivé') }}</span>
             <strong>{{ directionStats.entrant }}</strong>
         </a>
         <a class="card stat stat--sent {{ filters.direction|default('') == 'sortant' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({direction: 'sortant'})) }}">
-            <span>Envoyes</span>
+            <span>{{ directionLabels.sortant|default('Départ') }}</span>
             <strong>{{ directionStats.sortant }}</strong>
         </a>
         <a class="card stat stat--internal {{ filters.direction|default('') == 'note_interne' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({direction: 'note_interne'})) }}">
-            <span>Notes internes</span>
+            <span>{{ directionLabels.note_interne|default('Notes internes') }}</span>
             <strong>{{ directionStats.note_interne }}</strong>
         </a>
         <a class="card stat stat--progress {{ filters.status|default('') == 'en_cours' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({status: 'en_cours'})) }}">
-            <span>En cours</span>
+            <span>{{ statusLabels.en_cours|default('En cours') }}</span>
             <strong>{{ statusStats.en_cours }}</strong>
         </a>
         <a class="card stat stat--done {{ filters.status|default('') == 'traite' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({status: 'traite'})) }}">
-            <span>Traites</span>
+            <span>{{ statusLabels.traite|default('Traites') }}</span>
             <strong>{{ statusStats.traite }}</strong>
         </a>
         <a class="card stat stat--urgent {{ filters.status|default('') == 'urgent' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({status: 'urgent'})) }}">
-            <span>Urgents</span>
+            <span>{{ statusLabels.urgent|default('Urgents') }}</span>
             <strong>{{ statusStats.urgent }}</strong>
         </a>
     </section>
@@ -83,7 +83,7 @@
                     <tr>
                         <th>Date</th>
                         <th>Objet</th>
-                        <th>Emetteur</th>
+                        <th>Interlocuteur</th>
                         <th>Statut</th>
                         <th>Impute a</th>
                     </tr>
@@ -93,8 +93,8 @@
                     <tr>
                         <td>{{ courrier.mailDate|date('d/m/Y') }}</td>
                         <td><a href="{{ path('app_courrier_show', {id: courrier.id}) }}"><strong>{{ courrier.subject }}</strong></a></td>
-                        <td>{{ courrier.senderLabel }}</td>
-                        <td><span class="badge {{ courrier.status }}">{{ courrier.statusLabel }}</span></td>
+                        <td>{{ courrier.interlocuteurLabel }}</td>
+                        <td><span class="badge {{ courrier.status }}">{{ statusLabels[courrier.status]|default(courrier.statusLabel) }}</span></td>
                         <td>{{ courrier.assignedToLabel }}</td>
                     </tr>
                 {% else %}
@@ -124,7 +124,7 @@
                 {% for courrier in urgentCourriers|slice(0, 6) %}
                     <a href="{{ path('app_courrier_show', {id: courrier.id}) }}">
                         <strong>{{ courrier.subject }}</strong><br>
-                        <span class="muted">{{ courrier.senderLabel }} - {{ courrier.mailDate|date('d/m/Y') }}</span>
+                        <span class="muted">{{ courrier.interlocuteurLabel }} - {{ courrier.mailDate|date('d/m/Y') }}</span>
                     </a>
                 {% else %}
                     <p>Aucun courrier urgent.</p>

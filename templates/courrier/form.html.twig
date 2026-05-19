@@ -6,7 +6,7 @@
     <div class="topbar">
         <div>
             <h1>{{ title }}</h1>
-            <p>Informations, scan/PDF, imputation et suivi de reponse.</p>
+            <p>Reference, localisation, scan/PDF, imputation et suivi de reponse.</p>
         </div>
         <div class="actions">
             <a class="button secondary" href="{{ path('app_courrier_index') }}">Retour</a>
@@ -19,24 +19,35 @@
             <section class="form-section">
                 <div class="form-section__header">
                     <h2>Identification</h2>
-                    <p>Sens, date, typologie et statut de traitement.</p>
+                    <p>Reference, nature, date et statut de traitement.</p>
                 </div>
                 <div class="form-grid">
+                    <div>{{ form_row(form.reference) }}</div>
+                    <div>
+                        {{ form_label(form.replyTo) }}
+                        {{ form_errors(form.replyTo) }}
+                        {{ form_widget(form.replyTo, {
+                            attr: {
+                                class: 'reply-to-select sr-only-select',
+                                'data-autocomplete-select': 'true',
+                                'data-placeholder': 'Rechercher une reference'
+                            }
+                        }) }}
+                    </div>
                     <div>{{ form_row(form.mailDate) }}</div>
                     <div>
                         {{ form_label(form.direction) }}
                         {{ form_widget(form.direction, {attr: {'data-direction-field': 'true'}}) }}
                         {{ form_errors(form.direction) }}
                     </div>
-                    <div>{{ form_row(form.type) }}</div>
-                    <div>{{ form_row(form.status) }}</div>
+                    <div class="full">{{ form_row(form.status) }}</div>
                 </div>
             </section>
 
             <section class="form-section">
                 <div class="form-section__header">
                     <h2>Contacts</h2>
-                    <p>Le champ affiche l'emetteur ou les destinataires selon le sens selectionne.</p>
+                    <p>Le champ affiche l'emetteur ou les destinataires selon la nature selectionnee.</p>
                 </div>
                 <div class="form-grid">
                     <div data-visible-for="entrant">
@@ -85,6 +96,7 @@
                     <div class="full">{{ form_row(form.subject) }}</div>
                     <div class="full">{{ form_row(form.content) }}</div>
                     <div class="full">{{ form_row(form.responseNotes) }}</div>
+                    <div class="full">{{ form_row(form.localisation) }}</div>
                     <div class="full">
                         {{ form_row(form.attachment) }}
                         {% if courrier.attachmentFilename %}

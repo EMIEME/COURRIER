@@ -3,7 +3,7 @@
 {% block title %}Destinataires{% endblock %}
 
 {% block body %}
-    <div class="topbar">
+    <div class="topbar page-band">
         <div>
             <h1>Destinataires</h1>
             <p>Referentiel utilise par le champ destinataire des courriers.</p>
@@ -13,7 +13,20 @@
         </div>
     </div>
 
-    <div class="table-wrap">
+    <form class="form-panel" method="get" action="{{ path('app_destinataire_index') }}" style="margin-bottom: 16px;">
+        <div class="filters">
+            <div>
+                <label for="q">Verifier un nom</label>
+                <input id="q" name="q" value="{{ filters.q|default('') }}" placeholder="Saisir un nom ou une partie du nom">
+            </div>
+            <div style="align-self: end;" class="actions">
+                <button type="submit">Rechercher</button>
+                <a class="button secondary" href="{{ path('app_destinataire_index') }}">Reinitialiser</a>
+            </div>
+        </div>
+    </form>
+
+    <div class="table-wrap is-colorful">
         <table>
             <thead>
                 <tr>
@@ -30,7 +43,11 @@
                     <td><strong>{{ destinataire.name }}</strong></td>
                     <td>{{ destinataire.service ?: '-' }}</td>
                     <td>{{ destinataire.email ?: '-' }}</td>
-                    <td>{{ destinataire.courriers|length }}</td>
+                    <td>
+                        <a class="button compact secondary" href="{{ path('app_courrier_index', {destinataire: destinataire.id}) }}" title="Afficher les courriers lies a {{ destinataire.name }}">
+                            {{ courrierCounts[destinataire.id]|default(0) }}
+                        </a>
+                    </td>
                     <td>
                         <div class="actions">
                             <a class="button secondary" href="{{ path('app_destinataire_edit', {id: destinataire.id}) }}">Modifier</a>
@@ -42,9 +59,31 @@
                     </td>
                 </tr>
             {% else %}
-                <tr><td colspan="5" class="muted">Aucun destinataire.</td></tr>
+                <tr>
+                    <td colspan="5" class="muted">
+                        {% if filters.q|default('') %}
+                            Aucun destinataire ne correspond a ce nom.
+                        {% else %}
+                            Aucun destinataire.
+                        {% endif %}
+                    </td>
+                </tr>
             {% endfor %}
             </tbody>
         </table>
+        <div class="pagination">
+            <span>
+                {{ pagination.total }} destinataire{{ pagination.total > 1 ? 's' : '' }}
+                - page {{ pagination.page }} / {{ pagination.totalPages }}
+            </span>
+            <div class="actions">
+                {% if pagination.page > 1 %}
+                    <a class="button secondary" href="{{ path('app_destinataire_index', {q: filters.q|default(''), page: pagination.page - 1}) }}">Precedent</a>
+                {% endif %}
+                {% if pagination.page < pagination.totalPages %}
+                    <a class="button secondary" href="{{ path('app_destinataire_index', {q: filters.q|default(''), page: pagination.page + 1}) }}">Suivant</a>
+                {% endif %}
+            </div>
+        </div>
     </div>
 {% endblock %}

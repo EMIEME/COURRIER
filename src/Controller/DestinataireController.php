@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Destinataire;
 use App\Form\DestinataireType;
+use App\Repository\CourrierRepository;
 use App\Repository\DestinataireRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -18,10 +19,32 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class DestinataireController extends AbstractController
 {
     #[Route('', name: 'app_destinataire_index', methods: ['GET'])]
-    public function index(DestinataireRepository $destinataireRepository): Response
+    public function index(Request $request, DestinataireRepository $destinataireRepository, CourrierRepository $courrierRepository): Response
     {
+        $limit = 10;
+        $query = trim((string) $request->query->get('q', ''));
+        $total = $destinataireRepository->countSearch($query);
+        $totalPages = max(1, (int) ceil($total / $limit));
+        $page = min(max(1, $request->query->getInt('page', 1)), $totalPages);
+        $destinataires = $destinataireRepository->searchPaginated($query, $page, $limit);
+        $courrierCounts = [];
+
+        foreach ($destinataires as $destinataire) {
+            $courrierCounts[$destinataire->getId()] = $courrierRepository->countLinkedToDestinataire($destinataire);
+        }
+
         return $this->render('destinataire/index.html.twig', [
-            'destinataires' => $destinataireRepository->findBy([], ['name' => 'ASC']),
+            'destinataires' => $destinataires,
+            'courrierCounts' => $courrierCounts,
+            'filters' => [
+                'q' => $query,
+            ],
+            'pagination' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $total,
+                'totalPages' => $totalPages,
+            ],
         ]);
     }
 
