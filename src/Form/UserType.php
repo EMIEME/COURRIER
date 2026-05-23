@@ -31,11 +31,15 @@ class UserType extends AbstractType
                 'required' => false,
             ])
             ->add('roles', ChoiceType::class, [
-                'label' => 'Roles',
+                'label' => 'Permissions',
                 'choices' => [
-                    'Admin' => 'ROLE_ADMIN',
-                    'Secretariat' => 'ROLE_SECRETARIAT',
+                    'Administrateur' => 'ROLE_ADMIN',
+                    'Secrétariat' => 'ROLE_SECRETARIAT',
                     'Utilisateur standard' => 'ROLE_USER',
+                    'Voir les courriers' => 'ROLE_COURRIER_VIEW',
+                    'Créer et modifier les courriers' => 'ROLE_COURRIER_EDIT',
+                    'Supprimer les courriers' => 'ROLE_COURRIER_DELETE',
+                    'Valider / changer le statut' => 'ROLE_COURRIER_VALIDATE',
                 ],
                 'multiple' => true,
                 'expanded' => true,

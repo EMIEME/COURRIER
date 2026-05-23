@@ -7,10 +7,13 @@
         <div>
             <h1>{{ courrier.subject }}</h1>
             <p>{{ courrier.senderLabel }} - {{ courrier.mailDate|date('d/m/Y') }}</p>
+            {% if courrier.deletionPending %}
+                <p><span class="badge pending-deletion">Suppression en attente d approbation</span></p>
+            {% endif %}
         </div>
         <div class="actions">
             <a class="button secondary" href="{{ path('app_courrier_index') }}">Retour</a>
-            {% if is_granted('ROLE_SECRETARIAT') %}
+            {% if is_granted('ROLE_COURRIER_EDIT') and not courrier.deletionPending %}
                 <a class="button" href="{{ path('app_courrier_edit', {id: courrier.id}) }}">Modifier</a>
             {% endif %}
         </div>
@@ -55,35 +58,77 @@
 
         <aside class="form-panel">
             <h2>Workflow</h2>
-            <form method="post" action="{{ path('app_courrier_assign', {id: courrier.id}) }}">
-                <input type="hidden" name="_token" value="{{ csrf_token('assign' ~ courrier.id) }}">
-                <div style="margin-bottom: 12px;">
-                    <label for="assignedTo">Imputer a</label>
-                    <select id="assignedTo" name="assignedTo[]" class="sr-only-select" data-autocomplete-select="true" data-placeholder="Rechercher une personne" multiple>
-                        {% for user in users %}
-                            <option value="{{ user.id }}" {{ courrier.assignedTo.contains(user) ? 'selected' : '' }}>{{ user.fullName }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div style="margin-bottom: 12px;">
-                    <label for="status">Statut</label>
-                    <select id="status" name="status">
-                        {% for label, value in statuses %}
-                            <option value="{{ value }}" {{ courrier.status == value ? 'selected' : '' }}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div style="margin-bottom: 12px;">
-                    <label for="responseNotes">Suivi / reponse</label>
-                    <textarea id="responseNotes" name="responseNotes" rows="6">{{ courrier.responseNotes }}</textarea>
-                </div>
-                <button type="submit">Mettre a jour le suivi</button>
-            </form>
+            {% if courrier.deletionPending %}
+                <p class="muted">Ce courrier est en attente de decision administrative pour sa suppression.</p>
+            {% elseif is_granted('ROLE_COURRIER_EDIT') or is_granted('ROLE_COURRIER_VALIDATE') %}
+                <form method="post" action="{{ path('app_courrier_assign', {id: courrier.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('assign' ~ courrier.id) }}">
+                    <div style="margin-bottom: 12px;">
+                        <label for="assignedTo">Imputer a</label>
+                        {% if is_granted('ROLE_COURRIER_EDIT') %}
+                            <select id="assignedTo" name="assignedTo[]" class="sr-only-select" data-autocomplete-select="true" data-placeholder="Rechercher une personne" multiple>
+                                {% for user in users %}
+                                    <option value="{{ user.id }}" {{ courrier.assignedTo.contains(user) ? 'selected' : '' }}>{{ user.fullName }}</option>
+                                {% endfor %}
+                            </select>
+                        {% else %}
+                            <p>{{ courrier.assignedToLabel }}</p>
+                        {% endif %}
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label for="status">Statut</label>
+                        {% if is_granted('ROLE_COURRIER_VALIDATE') %}
+                            <select id="status" name="status">
+                                {% for label, value in statuses %}
+                                    <option value="{{ value }}" {{ courrier.status == value ? 'selected' : '' }}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        {% else %}
+                            <input type="hidden" name="status" value="{{ courrier.status }}">
+                            <p><span class="badge {{ courrier.status }}">{{ courrier.statusLabel }}</span></p>
+                        {% endif %}
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label for="responseNotes">Suivi / reponse</label>
+                        {% if is_granted('ROLE_COURRIER_EDIT') %}
+                            <textarea id="responseNotes" name="responseNotes" rows="6">{{ courrier.responseNotes }}</textarea>
+                        {% else %}
+                            <p>{{ courrier.responseNotes ?: 'Non renseigne' }}</p>
+                        {% endif %}
+                    </div>
+                    <button type="submit">Mettre a jour le suivi</button>
+                </form>
+            {% else %}
+                <p class="muted">Vous pouvez consulter le workflow, mais vous n'avez pas la permission de le modifier.</p>
+                <dl class="detail-list">
+                    <div><dt>Imputation</dt><dd>{{ courrier.assignedToLabel }}</dd></div>
+                    <div><dt>Statut</dt><dd><span class="badge {{ courrier.status }}">{{ courrier.statusLabel }}</span></dd></div>
+                    <div><dt>Suivi / reponse</dt><dd>{{ courrier.responseNotes ?: 'Non renseigne' }}</dd></div>
+                </dl>
+            {% endif %}
 
-            {% if is_granted('ROLE_ADMIN') %}
+            {% if courrier.deletionPending and is_granted('ROLE_ADMIN') %}
+                <div class="form-panel" style="margin-top: 14px;">
+                    <h2>Decision administrateur</h2>
+                    <p>
+                        Demande faite par {{ courrier.deletionRequestedBy ? courrier.deletionRequestedBy.fullName : 'Utilisateur inconnu' }}
+                        le {{ courrier.deletionRequestedAt ? courrier.deletionRequestedAt|date('d/m/Y H:i') : 'date inconnue' }}.
+                    </p>
+                    <div class="actions" style="margin-top: 12px;">
+                        <form method="post" action="{{ path('app_courrier_delete_approve', {id: courrier.id}) }}" onsubmit="return confirm('Approuver la suppression definitive de ce courrier ?');">
+                            <input type="hidden" name="_token" value="{{ csrf_token('approve-delete' ~ courrier.id) }}">
+                            <button class="danger" type="submit">Approuver la suppression</button>
+                        </form>
+                        <form method="post" action="{{ path('app_courrier_delete_reject', {id: courrier.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('reject-delete' ~ courrier.id) }}">
+                            <button class="secondary" type="submit">Refuser</button>
+                        </form>
+                    </div>
+                </div>
+            {% elseif is_granted('ROLE_COURRIER_DELETE') %}
                 <form method="post" action="{{ path('app_courrier_delete', {id: courrier.id}) }}" style="margin-top: 14px;" onsubmit="return confirm('Supprimer ce courrier ?');">
                     <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ courrier.id) }}">
-                    <button class="danger" type="submit">Supprimer</button>
+                    <button class="danger" type="submit">Demander la suppression</button>
                 </form>
             {% endif %}
 

@@ -14,6 +14,8 @@ class CourrierAction
     public const TYPE_ASSIGNED = 'assigned';
     public const TYPE_STATUS_CHANGED = 'status_changed';
     public const TYPE_RESPONSE_ADDED = 'response_added';
+    public const TYPE_DELETE_REQUESTED = 'delete_requested';
+    public const TYPE_DELETE_REJECTED = 'delete_rejected';
 
     public const TYPES = [
         self::TYPE_CREATED => 'Création',
@@ -21,6 +23,8 @@ class CourrierAction
         self::TYPE_ASSIGNED => 'Imputation',
         self::TYPE_STATUS_CHANGED => 'Statut',
         self::TYPE_RESPONSE_ADDED => 'Réponse',
+        self::TYPE_DELETE_REQUESTED => 'Suppression demandée',
+        self::TYPE_DELETE_REJECTED => 'Suppression refusée',
     ];
 
     #[ORM\Id]

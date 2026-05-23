@@ -32,6 +32,7 @@ class CourrierType extends AbstractType
         $currentDirection = $courrier instanceof Courrier ? $courrier->getDirection() : null;
         $currentStatus = $courrier instanceof Courrier ? $courrier->getStatus() : null;
         $currentLocalisation = $courrier instanceof Courrier ? $courrier->getLocalisation() : null;
+        $canValidate = (bool) $options['can_validate'];
 
         $builder
             ->add('mailDate', DateType::class, [
@@ -111,6 +112,7 @@ class CourrierType extends AbstractType
             ->add('status', ChoiceType::class, [
                 'label' => 'Statut',
                 'choices' => $this->listProvider->statusChoices($currentStatus),
+                'disabled' => !$canValidate,
             ])
             ->add('assignedTo', EntityType::class, [
                 'label' => 'Imputer a',
@@ -154,8 +156,10 @@ class CourrierType extends AbstractType
         $resolver->setDefaults([
             'data_class' => Courrier::class,
             'current_courrier' => null,
+            'can_validate' => false,
         ]);
 
         $resolver->setAllowedTypes('current_courrier', [Courrier::class, 'null']);
+        $resolver->setAllowedTypes('can_validate', 'bool');
     }
 }

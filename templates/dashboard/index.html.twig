@@ -8,7 +8,7 @@
             <h1>Tableau de bord</h1>
             <p>Vue d'ensemble des courriers recus, envoyes et a traiter.</p>
         </div>
-        {% if is_granted('ROLE_SECRETARIAT') %}
+        {% if is_granted('ROLE_COURRIER_EDIT') %}
             <div class="actions">
                 <a class="button" href="{{ path('app_courrier_new') }}">Nouveau courrier</a>
             </div>

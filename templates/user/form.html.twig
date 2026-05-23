@@ -13,16 +13,75 @@
         </div>
     </div>
 
-    <div class="form-panel">
-        {{ form_start(form) }}
+    {% set permissionHelp = {
+        ROLE_ADMIN: 'Acces complet a l administration, aux parametres et aux decisions sensibles.',
+        ROLE_SECRETARIAT: 'Profil operationnel pour enregistrer, imputer et suivre les courriers.',
+        ROLE_USER: 'Compte applicatif de base. A completer avec les permissions utiles.',
+        ROLE_COURRIER_VIEW: 'Permet de consulter le tableau de bord, rechercher et ouvrir les courriers.',
+        ROLE_COURRIER_EDIT: 'Permet de creer, modifier, imputer et renseigner le suivi des courriers.',
+        ROLE_COURRIER_DELETE: 'Permet de demander la suppression d un courrier, sous approbation administrateur.',
+        ROLE_COURRIER_VALIDATE: 'Permet de changer le statut d un courrier et de valider son traitement.'
+    } %}
+
+    <div class="form-panel user-form-panel">
+        {{ form_start(form, {attr: {class: 'professional-form'}}) }}
             {{ form_errors(form) }}
-            <div class="form-grid">
-                <div>{{ form_row(form.fullName) }}</div>
-                <div>{{ form_row(form.email) }}</div>
-                <div>{{ form_row(form.service) }}</div>
-                <div>{{ form_row(form.plainPassword) }}</div>
-                <div class="full">{{ form_row(form.roles) }}</div>
-            </div>
+            <section class="form-section">
+                <div class="form-section__header">
+                    <h2>Identité</h2>
+                    <p>Informations de connexion et rattachement du compte.</p>
+                </div>
+                <div class="form-grid">
+                    <div>{{ form_row(form.fullName) }}</div>
+                    <div>{{ form_row(form.email) }}</div>
+                    <div>{{ form_row(form.service) }}</div>
+                    <div>{{ form_row(form.plainPassword) }}</div>
+                </div>
+            </section>
+
+            <section class="form-section">
+                <div class="form-section__header">
+                    <h2>Permissions</h2>
+                    <p>Attribuez un profil general puis ajustez les droits precis sur les courriers.</p>
+                </div>
+                {{ form_errors(form.roles) }}
+                <div class="permission-layout">
+                    <article class="permission-group">
+                        <h3>Profils</h3>
+                        <div class="permission-options">
+                            {% for permission in form.roles %}
+                                {% if permission.vars.value in ['ROLE_ADMIN', 'ROLE_SECRETARIAT', 'ROLE_USER'] %}
+                                    <label class="permission-option" for="{{ permission.vars.id }}">
+                                        {{ form_widget(permission) }}
+                                        <span>
+                                            <strong>{{ permission.vars.label }}</strong>
+                                            <small>{{ permissionHelp[permission.vars.value]|default('') }}</small>
+                                        </span>
+                                    </label>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </article>
+
+                    <article class="permission-group permission-group--accent">
+                        <h3>Droits sur les courriers</h3>
+                        <div class="permission-options">
+                            {% for permission in form.roles %}
+                                {% if permission.vars.value starts with 'ROLE_COURRIER_' %}
+                                    <label class="permission-option" for="{{ permission.vars.id }}">
+                                        {{ form_widget(permission) }}
+                                        <span>
+                                            <strong>{{ permission.vars.label }}</strong>
+                                            <small>{{ permissionHelp[permission.vars.value]|default('') }}</small>
+                                        </span>
+                                    </label>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </article>
+                </div>
+                {% do form.roles.setRendered %}
+            </section>
             <div class="form-actions">
                 <button type="submit">{{ button_label }}</button>
                 <a class="button secondary" href="{{ path('app_user_index') }}">Annuler</a>

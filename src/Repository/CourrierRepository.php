@@ -33,6 +33,12 @@ class CourrierRepository extends ServiceEntityRepository
             ->orderBy('c.mailDate', 'DESC')
             ->addOrderBy('c.id', 'DESC');
 
+        if (!empty($filters['pendingDeletion'])) {
+            $qb->andWhere('c.deletionRequestedAt IS NOT NULL');
+        } else {
+            $qb->andWhere('c.deletionRequestedAt IS NULL');
+        }
+
         if (!empty($filters['query'])) {
             $qb->andWhere('LOWER(c.reference) LIKE :query OR LOWER(c.subject) LIKE :query OR LOWER(c.content) LIKE :query OR LOWER(c.sender) LIKE :query OR LOWER(c.recipient) LIKE :query OR LOWER(c.localisation) LIKE :query')
                 ->setParameter('query', '%'.mb_strtolower((string) $filters['query']).'%');
@@ -81,9 +87,28 @@ class CourrierRepository extends ServiceEntityRepository
         return (int) $this->createQueryBuilder('c')
             ->select('COUNT(DISTINCT c.id)')
             ->andWhere('c.senderContact = :destinataire OR :destinataire MEMBER OF c.destinataires')
+            ->andWhere('c.deletionRequestedAt IS NULL')
             ->setParameter('destinataire', $destinataire)
             ->getQuery()
             ->getSingleScalarResult();
+    }
+
+    /**
+     * @return list<Courrier>
+     */
+    public function findOverdueInProgress(\DateTimeInterface $today): array
+    {
+        return $this->createQueryBuilder('c')
+            ->andWhere('c.status = :status')
+            ->andWhere('c.responseDueAt IS NOT NULL')
+            ->andWhere('c.responseDueAt < :today')
+            ->andWhere('c.deletionRequestedAt IS NULL')
+            ->setParameter('status', Courrier::STATUS_EN_COURS)
+            ->setParameter('today', \DateTimeImmutable::createFromInterface($today), Types::DATE_IMMUTABLE)
+            ->orderBy('c.responseDueAt', 'ASC')
+            ->addOrderBy('c.id', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 
     /**
@@ -98,6 +123,7 @@ class CourrierRepository extends ServiceEntityRepository
     {
         $qb = $this->createQueryBuilder('c')
             ->select('c.status AS status, COUNT(c.id) AS total')
+            ->andWhere('c.deletionRequestedAt IS NULL')
             ->groupBy('c.status');
 
         $this->applyPeriodFilters($qb, $filters);
@@ -126,6 +152,7 @@ class CourrierRepository extends ServiceEntityRepository
     {
         $qb = $this->createQueryBuilder('c')
             ->select('c.direction AS direction, COUNT(c.id) AS total')
+            ->andWhere('c.deletionRequestedAt IS NULL')
             ->groupBy('c.direction');
 
         $this->applyPeriodFilters($qb, $filters);
@@ -143,6 +170,15 @@ class CourrierRepository extends ServiceEntityRepository
         }
 
         return $stats;
+    }
+
+    public function countPendingDeletion(): int
+    {
+        return (int) $this->createQueryBuilder('c')
+            ->select('COUNT(c.id)')
+            ->andWhere('c.deletionRequestedAt IS NOT NULL')
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 
     /**

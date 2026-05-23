@@ -11,3 +11,4 @@
 /vendor/
 ###< symfony/framework-bundle ###
 .vercel
+/courrier_dump.sql

@@ -11,6 +11,7 @@ use App\Repository\DestinataireRepository;
 use App\Repository\UserRepository;
 use App\Service\CourrierExportService;
 use App\Service\CourrierListProvider;
+use App\Service\CourrierUrgencyUpdater;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -26,13 +27,18 @@ use Symfony\Component\String\Slugger\AsciiSlugger;
 class CourrierController extends AbstractController
 {
     #[Route('', name: 'app_courrier_index', methods: ['GET'])]
-    public function index(Request $request, CourrierRepository $courrierRepository, UserRepository $userRepository, DestinataireRepository $destinataireRepository, CourrierListProvider $listProvider): Response
+    #[IsGranted('ROLE_COURRIER_VIEW')]
+    public function index(Request $request, CourrierRepository $courrierRepository, UserRepository $userRepository, DestinataireRepository $destinataireRepository, CourrierListProvider $listProvider, CourrierUrgencyUpdater $urgencyUpdater): Response
     {
+        $urgencyUpdater->updateOverdueCourriers();
+
         $filters = $this->buildSearchFilters($request, $userRepository, $destinataireRepository);
 
         return $this->render('courrier/index.html.twig', [
             'courriers' => $courrierRepository->search($filters),
             'filters' => $request->query->all(),
+            'isPendingDeletionView' => !empty($filters['pendingDeletion']),
+            'pendingDeletionCount' => $this->isGranted('ROLE_ADMIN') ? $courrierRepository->countPendingDeletion() : 0,
             'selectedDestinataire' => $filters['destinataire'] ?? null,
             'statuses' => $listProvider->statusChoices(),
             'directions' => $listProvider->natureChoices(),
@@ -43,6 +49,7 @@ class CourrierController extends AbstractController
     }
 
     #[Route('/export/{format}', name: 'app_courrier_export', requirements: ['format' => 'excel|pdf'], methods: ['GET'])]
+    #[IsGranted('ROLE_COURRIER_VIEW')]
     public function export(
         string $format,
         Request $request,
@@ -51,7 +58,10 @@ class CourrierController extends AbstractController
         DestinataireRepository $destinataireRepository,
         CourrierListProvider $listProvider,
         CourrierExportService $exportService,
+        CourrierUrgencyUpdater $urgencyUpdater,
     ): Response {
+        $urgencyUpdater->updateOverdueCourriers();
+
         $courriers = $courrierRepository->search($this->buildSearchFilters($request, $userRepository, $destinataireRepository));
         $directionLabels = $listProvider->natureLabels();
         $statusLabels = $listProvider->statusLabels();
@@ -75,11 +85,14 @@ class CourrierController extends AbstractController
     }
 
     #[Route('/nouveau', name: 'app_courrier_new', methods: ['GET', 'POST'])]
-    #[IsGranted('ROLE_SECRETARIAT')]
+    #[IsGranted('ROLE_COURRIER_EDIT')]
     public function new(Request $request, EntityManagerInterface $entityManager): Response
     {
         $courrier = new Courrier();
-        $form = $this->createForm(CourrierType::class, $courrier, ['current_courrier' => $courrier]);
+        $form = $this->createForm(CourrierType::class, $courrier, [
+            'current_courrier' => $courrier,
+            'can_validate' => $this->isGranted('ROLE_COURRIER_VALIDATE'),
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -108,8 +121,12 @@ class CourrierController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_courrier_show', methods: ['GET'])]
-    public function show(Courrier $courrier, UserRepository $userRepository, CourrierListProvider $listProvider): Response
+    #[IsGranted('ROLE_COURRIER_VIEW')]
+    public function show(Courrier $courrier, UserRepository $userRepository, CourrierListProvider $listProvider, CourrierUrgencyUpdater $urgencyUpdater): Response
     {
+        $urgencyUpdater->updateOverdueCourriers();
+        $this->denyAccessToPendingDeletion($courrier);
+
         return $this->render('courrier/show.html.twig', [
             'courrier' => $courrier,
             'users' => $userRepository->findAssignableUsers(),
@@ -120,11 +137,16 @@ class CourrierController extends AbstractController
     }
 
     #[Route('/{id}/modifier', name: 'app_courrier_edit', methods: ['GET', 'POST'])]
-    #[IsGranted('ROLE_SECRETARIAT')]
+    #[IsGranted('ROLE_COURRIER_EDIT')]
     public function edit(Request $request, Courrier $courrier, EntityManagerInterface $entityManager): Response
     {
+        $this->denyAccessToPendingDeletion($courrier, true);
+
         $before = $this->snapshotCourrier($courrier);
-        $form = $this->createForm(CourrierType::class, $courrier, ['current_courrier' => $courrier]);
+        $form = $this->createForm(CourrierType::class, $courrier, [
+            'current_courrier' => $courrier,
+            'can_validate' => $this->isGranted('ROLE_COURRIER_VALIDATE'),
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -150,6 +172,15 @@ class CourrierController extends AbstractController
     #[Route('/{id}/imputer', name: 'app_courrier_assign', methods: ['POST'])]
     public function assign(Request $request, Courrier $courrier, EntityManagerInterface $entityManager, UserRepository $userRepository): RedirectResponse
     {
+        $this->denyAccessToPendingDeletion($courrier, true);
+
+        $canEdit = $this->isGranted('ROLE_COURRIER_EDIT');
+        $canValidate = $this->isGranted('ROLE_COURRIER_VALIDATE');
+
+        if (!$canEdit && !$canValidate) {
+            throw $this->createAccessDeniedException();
+        }
+
         if (!$this->isCsrfTokenValid('assign'.$courrier->getId(), (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException();
         }
@@ -158,20 +189,28 @@ class CourrierController extends AbstractController
         $previousStatus = $courrier->getStatus();
         $previousResponseNotes = $courrier->getResponseNotes();
 
-        $courrier->clearAssignedTo();
-        foreach ($request->request->all('assignedTo') as $userId) {
-            $assignedTo = $userRepository->find((int) $userId);
+        if ($canEdit) {
+            $courrier->clearAssignedTo();
+            foreach ($request->request->all('assignedTo') as $userId) {
+                $assignedTo = $userRepository->find((int) $userId);
 
-            if ($assignedTo) {
-                $courrier->addAssignedTo($assignedTo);
+                if ($assignedTo) {
+                    $courrier->addAssignedTo($assignedTo);
+                }
             }
+
+            $courrier->setResponseNotes($request->request->get('responseNotes'));
         }
 
-        if ($request->request->get('status')) {
-            $courrier->setStatus((string) $request->request->get('status'));
+        $requestedStatus = (string) $request->request->get('status', $previousStatus);
+        if ($requestedStatus !== $previousStatus) {
+            if (!$canValidate) {
+                throw $this->createAccessDeniedException();
+            }
+
+            $courrier->setStatus($requestedStatus);
         }
 
-        $courrier->setResponseNotes($request->request->get('responseNotes'));
         $courrier->touch();
 
         if ($previousAssignedTo !== $courrier->getAssignedToLabel()) {
@@ -212,16 +251,85 @@ class CourrierController extends AbstractController
     }
 
     #[Route('/{id}/supprimer', name: 'app_courrier_delete', methods: ['POST'])]
-    #[IsGranted('ROLE_ADMIN')]
+    #[IsGranted('ROLE_COURRIER_DELETE')]
     public function delete(Request $request, Courrier $courrier, EntityManagerInterface $entityManager): RedirectResponse
     {
         if ($this->isCsrfTokenValid('delete'.$courrier->getId(), (string) $request->request->get('_token'))) {
-            $entityManager->remove($courrier);
+            if ($courrier->isDeletionPending()) {
+                $this->addFlash('success', 'Une demande de suppression est deja en attente pour ce courrier.');
+
+                if ($this->isGranted('ROLE_ADMIN')) {
+                    return $this->redirectToRoute('app_courrier_index', ['pendingDeletion' => 1]);
+                }
+
+                return $this->redirectToRoute('app_courrier_index');
+            }
+
+            $courrier->requestDeletion($this->getCurrentUser());
+            $this->recordAction(
+                $entityManager,
+                $courrier,
+                CourrierAction::TYPE_DELETE_REQUESTED,
+                'Suppression demandée',
+                sprintf('Demandeur: %s', $this->getCurrentUser()?->getFullName() ?? 'Utilisateur inconnu')
+            );
             $entityManager->flush();
-            $this->addFlash('success', 'Le courrier a ete supprime.');
+            $this->addFlash('success', 'La demande de suppression a ete transmise a l administrateur.');
         }
 
         return $this->redirectToRoute('app_courrier_index');
+    }
+
+    #[Route('/{id}/suppression/approuver', name: 'app_courrier_delete_approve', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function approveDeletion(Request $request, Courrier $courrier, EntityManagerInterface $entityManager): RedirectResponse
+    {
+        if (!$this->isCsrfTokenValid('approve-delete'.$courrier->getId(), (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if (!$courrier->isDeletionPending()) {
+            $this->addFlash('error', 'Aucune demande de suppression n est en attente pour ce courrier.');
+
+            return $this->redirectToRoute('app_courrier_show', ['id' => $courrier->getId()]);
+        }
+
+        $entityManager->remove($courrier);
+        $entityManager->flush();
+        $this->addFlash('success', 'La suppression du courrier a ete approuvee et executee.');
+
+        return $this->redirectToRoute('app_courrier_index', ['pendingDeletion' => 1]);
+    }
+
+    #[Route('/{id}/suppression/refuser', name: 'app_courrier_delete_reject', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function rejectDeletion(Request $request, Courrier $courrier, EntityManagerInterface $entityManager): RedirectResponse
+    {
+        if (!$this->isCsrfTokenValid('reject-delete'.$courrier->getId(), (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if (!$courrier->isDeletionPending()) {
+            $this->addFlash('error', 'Aucune demande de suppression n est en attente pour ce courrier.');
+
+            return $this->redirectToRoute('app_courrier_show', ['id' => $courrier->getId()]);
+        }
+
+        $requestedBy = $courrier->getDeletionRequestedBy()?->getFullName() ?? 'Utilisateur inconnu';
+        $requestedAt = $courrier->getDeletionRequestedAt()?->format('d/m/Y H:i') ?? 'date inconnue';
+
+        $courrier->cancelDeletionRequest();
+        $this->recordAction(
+            $entityManager,
+            $courrier,
+            CourrierAction::TYPE_DELETE_REJECTED,
+            'Suppression refusée',
+            sprintf("Demandeur: %s\nDate de demande: %s", $requestedBy, $requestedAt)
+        );
+        $entityManager->flush();
+        $this->addFlash('success', 'La demande de suppression a ete refusee. Le courrier est de nouveau accessible.');
+
+        return $this->redirectToRoute('app_courrier_show', ['id' => $courrier->getId()]);
     }
 
     private function handleUpload(?UploadedFile $file, Courrier $courrier): void
@@ -287,6 +395,7 @@ class CourrierController extends AbstractController
             'dateTo' => $request->query->get('dateTo'),
             'assignedTo' => $assignedTo,
             'destinataire' => $destinataire,
+            'pendingDeletion' => $this->isGranted('ROLE_ADMIN') && $request->query->getBoolean('pendingDeletion'),
         ];
     }
 
@@ -395,5 +504,16 @@ class CourrierController extends AbstractController
         $user = $this->getUser();
 
         return $user instanceof User ? $user : null;
+    }
+
+    private function denyAccessToPendingDeletion(Courrier $courrier, bool $denyForAdmin = false): void
+    {
+        if (!$courrier->isDeletionPending()) {
+            return;
+        }
+
+        if ($denyForAdmin || !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createNotFoundException();
+        }
     }
 }

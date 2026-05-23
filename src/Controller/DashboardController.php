@@ -5,16 +5,21 @@ namespace App\Controller;
 use App\Entity\Courrier;
 use App\Repository\CourrierRepository;
 use App\Service\CourrierListProvider;
+use App\Service\CourrierUrgencyUpdater;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 class DashboardController extends AbstractController
 {
     #[Route('/', name: 'app_dashboard')]
-    public function index(Request $request, CourrierRepository $courrierRepository, CourrierListProvider $listProvider): Response
+    #[IsGranted('ROLE_COURRIER_VIEW')]
+    public function index(Request $request, CourrierRepository $courrierRepository, CourrierListProvider $listProvider, CourrierUrgencyUpdater $urgencyUpdater): Response
     {
+        $urgencyUpdater->updateOverdueCourriers();
+
         $perPage = 20;
         $page = max(1, $request->query->getInt('page', 1));
         $periodFilters = [

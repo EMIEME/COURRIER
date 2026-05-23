@@ -6,7 +6,7 @@
     <div class="topbar">
         <div>
             <h1>Utilisateurs</h1>
-            <p>Gestion des comptes et des roles applicatifs.</p>
+            <p>Gestion des comptes et des permissions applicatives.</p>
         </div>
         <div class="actions">
             <a class="button" href="{{ path('app_user_new') }}">Nouvel utilisateur</a>
@@ -20,17 +20,30 @@
                     <th>Nom</th>
                     <th>Email</th>
                     <th>Service</th>
-                    <th>Roles</th>
+                    <th>Permissions</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
+            {% set roleLabels = {
+                ROLE_ADMIN: 'Administrateur',
+                ROLE_SECRETARIAT: 'Secrétariat',
+                ROLE_USER: 'Utilisateur standard',
+                ROLE_COURRIER_VIEW: 'Voir',
+                ROLE_COURRIER_EDIT: 'Modifier',
+                ROLE_COURRIER_DELETE: 'Supprimer',
+                ROLE_COURRIER_VALIDATE: 'Valider'
+            } %}
             {% for user in users %}
                 <tr>
                     <td><strong>{{ user.fullName }}</strong></td>
                     <td>{{ user.email }}</td>
                     <td>{{ user.service ?: '-' }}</td>
-                    <td>{{ user.roles|join(', ') }}</td>
+                    <td>
+                        {% for role in user.roles %}
+                            <span class="badge">{{ roleLabels[role]|default(role) }}</span>
+                        {% endfor %}
+                    </td>
                     <td>
                         <div class="actions">
                             <a class="button secondary" href="{{ path('app_user_edit', {id: user.id}) }}">Modifier</a>

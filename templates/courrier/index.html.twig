@@ -27,8 +27,15 @@
                 </svg>
                 PDF
             </a>
-            {% if is_granted('ROLE_SECRETARIAT') %}
+            {% if is_granted('ROLE_COURRIER_EDIT') %}
                 <a class="button" href="{{ path('app_courrier_new') }}">Enregistrer un courrier</a>
+            {% endif %}
+            {% if is_granted('ROLE_ADMIN') %}
+                {% if isPendingDeletionView %}
+                    <a class="button secondary" href="{{ path('app_courrier_index') }}">Courriers actifs</a>
+                {% else %}
+                    <a class="button secondary" href="{{ path('app_courrier_index', {pendingDeletion: 1}) }}">Suppressions en attente ({{ pendingDeletionCount }})</a>
+                {% endif %}
             {% endif %}
         </div>
     </div>
@@ -73,7 +80,7 @@
                 <input type="date" id="dateTo" name="dateTo" value="{{ filters.dateTo|default('') }}">
             </div>
             <div>
-                <label for="assignedTo">Impute a</label>
+                <label for="assignedTo">Imputer à</label>
                 <select id="assignedTo" name="assignedTo">
                     <option value="">Tous</option>
                     {% for user in users %}
@@ -100,6 +107,13 @@
         </div>
     {% endif %}
 
+    {% if isPendingDeletionView %}
+        <div class="form-panel" style="margin-bottom: 16px;">
+            <strong>Demandes de suppression en attente</strong>
+            <p>Ces courriers sont masques aux autres utilisateurs jusqu a l approbation ou au refus par un administrateur.</p>
+        </div>
+    {% endif %}
+
     <div class="table-wrap is-colorful">
         <table>
             <thead>
@@ -117,7 +131,12 @@
             {% for courrier in courriers %}
                 <tr>
                     <td>{{ courrier.mailDate|date('d/m/Y') }}</td>
-                    <td>{{ courrier.reference }}</td>
+                    <td>
+                        {{ courrier.reference }}
+                        {% if courrier.deletionPending %}
+                            <span class="badge pending-deletion">Suppression en attente</span>
+                        {% endif %}
+                    </td>
                     <td>{{ directionLabels[courrier.direction]|default(courrier.directionLabel) }}</td>
                     <td><a href="{{ path('app_courrier_show', {id: courrier.id}) }}"><strong>{{ courrier.subject }}</strong></a></td>
                     <td>{{ courrier.interlocuteurLabel }}</td>
@@ -130,7 +149,7 @@
                                     <circle cx="12" cy="12" r="3"/>
                                 </svg>
                             </a>
-                            {% if is_granted('ROLE_SECRETARIAT') %}
+                            {% if is_granted('ROLE_COURRIER_EDIT') and not courrier.deletionPending %}
                                 <a class="button compact icon-only action-edit" href="{{ path('app_courrier_edit', {id: courrier.id}) }}" title="Modifier" aria-label="Modifier le courrier {{ courrier.reference }}">
                                     <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                         <path d="M12 20h9"/>

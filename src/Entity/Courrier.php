@@ -106,6 +106,10 @@ class Courrier
     #[ORM\JoinColumn(onDelete: 'SET NULL')]
     private ?User $createdBy = null;
 
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(onDelete: 'SET NULL')]
+    private ?User $deletionRequestedBy = null;
+
     /**
      * @var Collection<int, CourrierAction>
      */
@@ -124,6 +128,9 @@ class Courrier
 
     #[ORM\Column]
     private \DateTimeImmutable $updatedAt;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $deletionRequestedAt = null;
 
     public function __construct()
     {
@@ -459,6 +466,39 @@ class Courrier
     public function setCreatedBy(?User $createdBy): self
     {
         $this->createdBy = $createdBy;
+
+        return $this;
+    }
+
+    public function getDeletionRequestedBy(): ?User
+    {
+        return $this->deletionRequestedBy;
+    }
+
+    public function getDeletionRequestedAt(): ?\DateTimeImmutable
+    {
+        return $this->deletionRequestedAt;
+    }
+
+    public function isDeletionPending(): bool
+    {
+        return null !== $this->deletionRequestedAt;
+    }
+
+    public function requestDeletion(?User $requestedBy): self
+    {
+        $this->deletionRequestedBy = $requestedBy;
+        $this->deletionRequestedAt = new \DateTimeImmutable();
+        $this->touch();
+
+        return $this;
+    }
+
+    public function cancelDeletionRequest(): self
+    {
+        $this->deletionRequestedBy = null;
+        $this->deletionRequestedAt = null;
+        $this->touch();
 
         return $this;
     }

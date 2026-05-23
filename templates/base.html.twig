@@ -274,6 +274,7 @@
                 .badge.urgent { background: #ffe7d0; color: #9a3900; }
                 .badge.traite { background: #dff3e8; color: var(--success); }
                 .badge.en_cours { background: #fff2cf; color: var(--warning); }
+                .badge.pending-deletion { background: #fde2e2; color: #9d1f1f; }
 
                 .filters, .form-grid {
                     display: grid;
@@ -320,6 +321,68 @@
                     accent-color: var(--primary);
                     min-height: 0;
                     width: auto;
+                }
+                .user-form-panel {
+                    max-width: 980px;
+                }
+                .permission-layout {
+                    display: grid;
+                    grid-template-columns: minmax(240px, 0.9fr) minmax(320px, 1.4fr);
+                    gap: 14px;
+                }
+                .permission-group {
+                    background: #fff;
+                    border: 1px solid var(--border);
+                    border-radius: 8px;
+                    padding: 14px;
+                }
+                .permission-group--accent {
+                    border-color: #f0c894;
+                    background: #fffaf3;
+                }
+                .permission-group h3 {
+                    color: var(--primary-strong);
+                    font-size: 16px;
+                    margin: 0 0 12px;
+                }
+                .permission-options {
+                    display: grid;
+                    gap: 10px;
+                }
+                .permission-option {
+                    align-items: flex-start;
+                    background: #fbfdf9;
+                    border: 1px solid var(--border);
+                    border-radius: 8px;
+                    cursor: pointer;
+                    display: flex;
+                    gap: 10px;
+                    margin: 0;
+                    padding: 11px;
+                    transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+                }
+                .permission-option:has(input:checked) {
+                    background: #edf7e9;
+                    border-color: #9ecb8c;
+                    box-shadow: 0 0 0 3px rgba(11, 107, 58, 0.09);
+                }
+                .permission-option input {
+                    flex: 0 0 auto;
+                    margin-top: 3px;
+                }
+                .permission-option strong {
+                    color: var(--text);
+                    display: block;
+                    font-size: 14px;
+                    line-height: 1.3;
+                }
+                .permission-option small {
+                    color: var(--muted);
+                    display: block;
+                    font-size: 12px;
+                    font-weight: 600;
+                    line-height: 1.45;
+                    margin-top: 3px;
                 }
                 .sr-only-select {
                     position: absolute;
@@ -585,7 +648,7 @@
                     .sidebar { position: static; }
                     .main { padding: 18px; }
                     .app-shell--guest .main { padding: 0; }
-                    .grid.stats, .grid.two, .filters, .form-grid { grid-template-columns: 1fr; }
+                    .grid.stats, .grid.two, .filters, .form-grid, .permission-layout { grid-template-columns: 1fr; }
                     .topbar { flex-direction: column; }
                     .login-page { padding: 20px; }
                     .login-shell { grid-template-columns: 1fr; gap: 20px; }
@@ -781,7 +844,7 @@
                             </span>
                             <span>Trouver un courrier</span>
                         </a>
-                        {% if is_granted('ROLE_SECRETARIAT') %}
+                        {% if is_granted('ROLE_COURRIER_EDIT') %}
                             <a class="{{ currentRoute == 'app_courrier_new' ? 'active' : '' }}" href="{{ path('app_courrier_new') }}">
                                 <span class="nav__icon" aria-hidden="true">
                                     <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
