@@ -338,24 +338,40 @@ class CourrierController extends AbstractController
             return;
         }
 
-        $newFilename = $this->buildAttachmentFilename($file, $courrier);
+        $attachmentPath = $this->buildAttachmentPath($file, $courrier);
+        $targetDirectory = rtrim((string) $this->getParameter('uploads_directory'), DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.dirname($attachmentPath);
 
-        $file->move($this->getParameter('uploads_directory'), $newFilename);
-        $courrier->setAttachmentFilename($newFilename);
+        if (!is_dir($targetDirectory)) {
+            mkdir($targetDirectory, 0755, true);
+        }
+
+        $file->move($targetDirectory, basename($attachmentPath));
+        $courrier->setAttachmentFilename($attachmentPath);
     }
 
-    private function buildAttachmentFilename(UploadedFile $file, Courrier $courrier): string
+    private function buildAttachmentPath(UploadedFile $file, Courrier $courrier): string
     {
         $slugger = new AsciiSlugger();
-        $interlocuteur = $courrier->getInterlocuteurLabel();
-        $safeInterlocuteur = strtolower($slugger->slug($interlocuteur)->toString());
-        $safeInterlocuteur = trim($safeInterlocuteur, '-');
-        $safeInterlocuteur = $safeInterlocuteur ? mb_substr($safeInterlocuteur, 0, 80) : 'piece-jointe';
+        $year = $courrier->getMailDate()?->format('Y') ?? (new \DateTimeImmutable())->format('Y');
+        $natureDirectory = $this->attachmentNatureDirectory($courrier);
+        $safeReference = strtolower($slugger->slug((string) $courrier->getReference())->toString());
+        $safeReference = trim($safeReference, '-');
+        $safeReference = $safeReference ? mb_substr($safeReference, 0, 90) : 'courrier';
         $hash = bin2hex(random_bytes(6));
         $extension = $file->guessExtension() ?: $file->getClientOriginalExtension() ?: 'bin';
         $extension = strtolower($slugger->slug($extension)->toString());
 
-        return sprintf('%s-%s.%s', $safeInterlocuteur, $hash, $extension ?: 'bin');
+        return sprintf('%s/%s/%s-%s.%s', $year, $natureDirectory, $safeReference, $hash, $extension ?: 'bin');
+    }
+
+    private function attachmentNatureDirectory(Courrier $courrier): string
+    {
+        return match ($courrier->getDirection()) {
+            Courrier::DIRECTION_ENTRANT => 'arrive',
+            Courrier::DIRECTION_SORTANT => 'depart',
+            Courrier::DIRECTION_INTERNE => 'note-interne',
+            default => 'autre',
+        };
     }
 
     private function normalizeContactsByDirection(Courrier $courrier): void
