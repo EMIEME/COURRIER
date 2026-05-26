@@ -33,10 +33,22 @@ class CourrierController extends AbstractController
         $urgencyUpdater->updateOverdueCourriers();
 
         $filters = $this->buildSearchFilters($request, $userRepository, $destinataireRepository);
+        $perPage = 10;
+        $page = max(1, $request->query->getInt('page', 1));
+        $courriers = $courrierRepository->search($filters);
+        $totalCourriers = count($courriers);
+        $totalPages = max(1, (int) ceil($totalCourriers / $perPage));
+        $page = min($page, $totalPages);
 
         return $this->render('courrier/index.html.twig', [
-            'courriers' => $courrierRepository->search($filters),
+            'courriers' => array_slice($courriers, ($page - 1) * $perPage, $perPage),
             'filters' => $request->query->all(),
+            'pagination' => [
+                'page' => $page,
+                'perPage' => $perPage,
+                'total' => $totalCourriers,
+                'totalPages' => $totalPages,
+            ],
             'isPendingDeletionView' => !empty($filters['pendingDeletion']),
             'pendingDeletionCount' => $this->isGranted('ROLE_ADMIN') ? $courrierRepository->countPendingDeletion() : 0,
             'selectedDestinataire' => $filters['destinataire'] ?? null,

@@ -114,6 +114,18 @@
         </div>
     {% endif %}
 
+    {% set paginationParams = filters|merge({
+        q: filters.q|default(''),
+        sender: filters.sender|default(''),
+        status: filters.status|default(''),
+        direction: filters.direction|default(''),
+        dateFrom: filters.dateFrom|default(''),
+        dateTo: filters.dateTo|default(''),
+        assignedTo: filters.assignedTo|default(''),
+        destinataire: filters.destinataire|default(''),
+        pendingDeletion: filters.pendingDeletion|default('')
+    }) %}
+
     <div class="table-wrap is-colorful">
         <table>
             <thead>
@@ -175,5 +187,19 @@
             {% endfor %}
             </tbody>
         </table>
+        <div class="pagination">
+            <span>
+                {{ pagination.total }} courrier{{ pagination.total > 1 ? 's' : '' }}
+                - page {{ pagination.page }} / {{ pagination.totalPages }}
+            </span>
+            <div class="actions">
+                {% if pagination.page > 1 %}
+                    <a class="button secondary" href="{{ path('app_courrier_index', paginationParams|merge({page: pagination.page - 1})) }}">Précédent</a>
+                {% endif %}
+                {% if pagination.page < pagination.totalPages %}
+                    <a class="button secondary" href="{{ path('app_courrier_index', paginationParams|merge({page: pagination.page + 1})) }}">Suivant</a>
+                {% endif %}
+            </div>
+        </div>
     </div>
 {% endblock %}
