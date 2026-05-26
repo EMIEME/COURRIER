@@ -69,7 +69,7 @@ class CourrierType extends AbstractType
                 'query_builder' => fn (DestinataireRepository $repository) => $repository->createQueryBuilder('d')->orderBy('d.name', 'ASC'),
             ])
             ->add('reference', TextType::class, [
-                'label' => 'Reference',
+                'label' => 'Référence',
             ])
             ->add('replyTo', EntityType::class, [
                 'label' => 'Réponse au courrier',
@@ -115,7 +115,7 @@ class CourrierType extends AbstractType
                 'disabled' => !$canValidate,
             ])
             ->add('assignedTo', EntityType::class, [
-                'label' => 'Imputer a',
+                'label' => 'Imputer à',
                 'class' => User::class,
                 'choice_label' => 'fullName',
                 'multiple' => true,
@@ -128,17 +128,17 @@ class CourrierType extends AbstractType
                 'query_builder' => fn (UserRepository $repository) => $repository->createQueryBuilder('u')->orderBy('u.fullName', 'ASC'),
             ])
             ->add('responseDueAt', DateType::class, [
-                'label' => 'Echeance de reponse',
+                'label' => 'Échéance de réponse',
                 'widget' => 'single_text',
                 'required' => false,
             ])
             ->add('responseNotes', TextareaType::class, [
-                'label' => 'Suivi / reponse',
+                'label' => 'Suivi / réponse',
                 'required' => false,
                 'attr' => ['rows' => 4],
             ])
             ->add('attachment', FileType::class, [
-                'label' => 'Scan ou PDF',
+                'label' => 'Pièce jointe',
                 'mapped' => false,
                 'required' => false,
                 'constraints' => [

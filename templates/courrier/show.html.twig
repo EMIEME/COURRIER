@@ -34,7 +34,7 @@
             <h2>Informations</h2>
             <dl class="detail-list">
                 <div><dt>Statut</dt><dd><span class="badge {{ courrier.status }}">{{ courrier.statusLabel }}</span></dd></div>
-                <div><dt>Reference</dt><dd>{{ courrier.reference }}</dd></div>
+                <div><dt>Référence</dt><dd>{{ courrier.reference }}</dd></div>
                 <div><dt>Date du courrier</dt><dd>{{ courrier.mailDate|date('d/m/Y') }}</dd></div>
                 <div><dt>Nature</dt><dd>{{ directionLabel }}</dd></div>
                 {% if courrier.replyTo %}
@@ -61,7 +61,7 @@
                     <div><dt>Localisation</dt><dd>{{ courrier.localisation }}</dd></div>
                 {% endif %}
                 {% if courrier.responseDueAt %}
-                    <div><dt>Echeance de reponse</dt><dd>{{ courrier.responseDueAt|date('d/m/Y') }}</dd></div>
+                    <div><dt>Échéance de réponse</dt><dd>{{ courrier.responseDueAt|date('d/m/Y') }}</dd></div>
                 {% endif %}
                 {% if courrier.replies|length > 0 %}
                     <div>
@@ -77,7 +77,7 @@
                     <div><dt>Contenu</dt><dd>{{ courrier.content|nl2br }}</dd></div>
                 {% endif %}
                 {% if courrier.attachmentFilename %}
-                    <div><dt>Piece jointe</dt><dd>
+                    <div><dt>Pièce jointe</dt><dd>
                         <a class="button secondary" href="{{ asset('uploads/courriers/' ~ courrier.attachmentFilename) }}" target="_blank">Ouvrir le document</a>
                     </dd></div>
                 {% endif %}
@@ -92,7 +92,7 @@
                 <form method="post" action="{{ path('app_courrier_assign', {id: courrier.id}) }}">
                     <input type="hidden" name="_token" value="{{ csrf_token('assign' ~ courrier.id) }}">
                     <div style="margin-bottom: 12px;">
-                        <label for="assignedTo">Imputer a</label>
+                        <label for="assignedTo">Imputer à</label>
                         {% if is_granted('ROLE_COURRIER_EDIT') %}
                             <select id="assignedTo" name="assignedTo[]" class="sr-only-select" data-autocomplete-select="true" data-placeholder="Rechercher une personne" multiple>
                                 {% for user in users %}
@@ -117,21 +117,21 @@
                         {% endif %}
                     </div>
                     <div style="margin-bottom: 12px;">
-                        <label for="responseNotes">Suivi / reponse</label>
+                        <label for="responseNotes">Suivi / réponse</label>
                         {% if is_granted('ROLE_COURRIER_EDIT') %}
                             <textarea id="responseNotes" name="responseNotes" rows="6">{{ courrier.responseNotes }}</textarea>
                         {% else %}
-                            <p>{{ courrier.responseNotes ?: 'Non renseigne' }}</p>
+                            <p>{{ courrier.responseNotes ?: 'Non renseigné' }}</p>
                         {% endif %}
                     </div>
-                    <button type="submit">Mettre a jour le suivi</button>
+                    <button type="submit">Mettre à jour le suivi</button>
                 </form>
             {% else %}
                 <p class="muted">Vous pouvez consulter le workflow, mais vous n'avez pas la permission de le modifier.</p>
                 <dl class="detail-list">
                     <div><dt>Imputation</dt><dd>{{ courrier.assignedToLabel }}</dd></div>
                     <div><dt>Statut</dt><dd><span class="badge {{ courrier.status }}">{{ courrier.statusLabel }}</span></dd></div>
-                    <div><dt>Suivi / reponse</dt><dd>{{ courrier.responseNotes ?: 'Non renseigne' }}</dd></div>
+                    <div><dt>Suivi / réponse</dt><dd>{{ courrier.responseNotes ?: 'Non renseigné' }}</dd></div>
                 </dl>
             {% endif %}
 

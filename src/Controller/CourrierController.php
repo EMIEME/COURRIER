@@ -151,7 +151,13 @@ class CourrierController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->normalizeContactsByDirection($courrier);
-            $this->handleUpload($form->get('attachment')->getData(), $courrier);
+            $uploadedNewAttachment = $this->handleUpload($form->get('attachment')->getData(), $courrier);
+            if (!$uploadedNewAttachment) {
+                $attachmentMoveWarning = $this->relocateAttachmentAfterMetadataChange($courrier, $before);
+                if ($attachmentMoveWarning) {
+                    $this->addFlash('error', $attachmentMoveWarning);
+                }
+            }
             $courrier->touch();
             $this->recordEditActions($entityManager, $courrier, $before);
             $entityManager->flush();
@@ -332,14 +338,14 @@ class CourrierController extends AbstractController
         return $this->redirectToRoute('app_courrier_show', ['id' => $courrier->getId()]);
     }
 
-    private function handleUpload(?UploadedFile $file, Courrier $courrier): void
+    private function handleUpload(?UploadedFile $file, Courrier $courrier): bool
     {
         if (!$file instanceof UploadedFile) {
-            return;
+            return false;
         }
 
         $attachmentPath = $this->buildAttachmentPath($file, $courrier);
-        $targetDirectory = rtrim((string) $this->getParameter('uploads_directory'), DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.dirname($attachmentPath);
+        $targetDirectory = $this->uploadsBaseDirectory().DIRECTORY_SEPARATOR.dirname($attachmentPath);
 
         if (!is_dir($targetDirectory)) {
             mkdir($targetDirectory, 0755, true);
@@ -347,9 +353,19 @@ class CourrierController extends AbstractController
 
         $file->move($targetDirectory, basename($attachmentPath));
         $courrier->setAttachmentFilename($attachmentPath);
+
+        return true;
     }
 
     private function buildAttachmentPath(UploadedFile $file, Courrier $courrier): string
+    {
+        $hash = bin2hex(random_bytes(6));
+        $extension = $file->guessExtension() ?: $file->getClientOriginalExtension() ?: 'bin';
+
+        return $this->buildAttachmentPathWithHash($courrier, $hash, $extension);
+    }
+
+    private function buildAttachmentPathWithHash(Courrier $courrier, string $hash, string $extension): string
     {
         $slugger = new AsciiSlugger();
         $year = $courrier->getMailDate()?->format('Y') ?? (new \DateTimeImmutable())->format('Y');
@@ -357,9 +373,7 @@ class CourrierController extends AbstractController
         $safeReference = strtolower($slugger->slug((string) $courrier->getReference())->toString());
         $safeReference = trim($safeReference, '-');
         $safeReference = $safeReference ? mb_substr($safeReference, 0, 90) : 'courrier';
-        $hash = bin2hex(random_bytes(6));
-        $extension = $file->guessExtension() ?: $file->getClientOriginalExtension() ?: 'bin';
-        $extension = strtolower($slugger->slug($extension)->toString());
+        $extension = strtolower($slugger->slug(ltrim($extension, '.'))->toString());
 
         return sprintf('%s/%s/%s-%s.%s', $year, $natureDirectory, $safeReference, $hash, $extension ?: 'bin');
     }
@@ -372,6 +386,87 @@ class CourrierController extends AbstractController
             Courrier::DIRECTION_INTERNE => 'note-interne',
             default => 'autre',
         };
+    }
+
+    /**
+     * @param array<string, string> $before
+     */
+    private function relocateAttachmentAfterMetadataChange(Courrier $courrier, array $before): ?string
+    {
+        $oldAttachment = trim((string) ($before['Fichier'] ?? ''));
+        if ('' === $oldAttachment || !$this->attachmentMetadataChanged($courrier, $before)) {
+            return null;
+        }
+
+        $currentAttachment = $courrier->getAttachmentFilename();
+        if (!$currentAttachment || $currentAttachment !== $oldAttachment) {
+            return null;
+        }
+
+        $attachmentIdentity = $this->extractAttachmentIdentity($oldAttachment);
+        if (!$attachmentIdentity) {
+            return 'La piece jointe est restee dans son emplacement initial car son hash n a pas pu etre reconnu.';
+        }
+
+        $targetAttachment = $this->buildAttachmentPathWithHash($courrier, $attachmentIdentity['hash'], $attachmentIdentity['extension']);
+        if ($targetAttachment === $oldAttachment) {
+            return null;
+        }
+
+        $uploadsDirectory = $this->uploadsBaseDirectory();
+        $oldPath = $uploadsDirectory.DIRECTORY_SEPARATOR.$oldAttachment;
+        $targetPath = $uploadsDirectory.DIRECTORY_SEPARATOR.$targetAttachment;
+
+        if (!is_file($oldPath)) {
+            return 'La piece jointe est restee dans son emplacement initial car le fichier source est introuvable.';
+        }
+
+        if (file_exists($targetPath)) {
+            return 'La piece jointe est restee dans son emplacement initial car un fichier existe deja dans le nouvel emplacement.';
+        }
+
+        $targetDirectory = dirname($targetPath);
+        if (!is_dir($targetDirectory)) {
+            mkdir($targetDirectory, 0755, true);
+        }
+
+        if (!@rename($oldPath, $targetPath)) {
+            return 'La piece jointe est restee dans son emplacement initial car le deplacement du fichier a echoue.';
+        }
+
+        $courrier->setAttachmentFilename($targetAttachment);
+
+        return null;
+    }
+
+    /**
+     * @param array<string, string> $before
+     */
+    private function attachmentMetadataChanged(Courrier $courrier, array $before): bool
+    {
+        return ($before['Référence'] ?? '') !== (string) $courrier->getReference()
+            || ($before['Date'] ?? '') !== ($courrier->getMailDate()?->format('d/m/Y') ?? '')
+            || ($before['Nature'] ?? '') !== $courrier->getDirectionLabel();
+    }
+
+    /**
+     * @return array{hash: string, extension: string}|null
+     */
+    private function extractAttachmentIdentity(string $attachmentPath): ?array
+    {
+        if (!preg_match('/-([a-f0-9]{12})\.([a-z0-9]+)$/i', basename($attachmentPath), $matches)) {
+            return null;
+        }
+
+        return [
+            'hash' => strtolower($matches[1]),
+            'extension' => strtolower($matches[2]),
+        ];
+    }
+
+    private function uploadsBaseDirectory(): string
+    {
+        return rtrim((string) $this->getParameter('uploads_directory'), DIRECTORY_SEPARATOR);
     }
 
     private function normalizeContactsByDirection(Courrier $courrier): void

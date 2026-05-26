@@ -6,7 +6,7 @@
     <div class="topbar">
         <div>
             <h1>{{ title }}</h1>
-            <p>Reference, localisation, scan/PDF, imputation et suivi de reponse.</p>
+            <p>Référence, localisation, pièce jointe, imputation et suivi de réponse.</p>
         </div>
         <div class="actions">
             <a class="button secondary" href="{{ path('app_courrier_index') }}">Retour</a>
@@ -19,7 +19,7 @@
             <section class="form-section">
                 <div class="form-section__header">
                     <h2>Identification</h2>
-                    <p>Reference, nature, date et statut de traitement.</p>
+                    <p>Référence, nature, date et statut de traitement.</p>
                 </div>
                 <div class="form-grid">
                     <div>{{ form_row(form.reference) }}</div>
@@ -30,7 +30,7 @@
                             attr: {
                                 class: 'reply-to-select sr-only-select',
                                 'data-autocomplete-select': 'true',
-                                'data-placeholder': 'Rechercher une reference'
+                                'data-placeholder': 'Rechercher une référence'
                             }
                         }) }}
                     </div>
@@ -100,7 +100,7 @@
                     <div class="full">
                         {{ form_row(form.attachment) }}
                         {% if courrier.attachmentFilename %}
-                            <p>Piece actuelle: <a href="{{ asset('uploads/courriers/' ~ courrier.attachmentFilename) }}" target="_blank">{{ courrier.attachmentFilename }}</a></p>
+                            <p>Pièce actuelle: <a href="{{ asset('uploads/courriers/' ~ courrier.attachmentFilename) }}" target="_blank">{{ courrier.attachmentFilename }}</a></p>
                         {% endif %}
                     </div>
                 </div>
