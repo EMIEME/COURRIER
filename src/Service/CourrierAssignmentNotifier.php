@@ -109,7 +109,7 @@ class CourrierAssignmentNotifier
             sprintf('Interlocuteur: %s', $courrier->getInterlocuteurLabel()),
             sprintf('Échéance de réponse: %s', $this->formatDate($courrier->getResponseDueAt())),
             '',
-            sprintf('Consulter le courrier auprès de votre gestionnaire de courriers:'),
+            sprintf('Consulter le courrier auprès de votre gestionnaire de courriers'),
         ];
 
         return implode("\n", $lines);
@@ -120,7 +120,7 @@ class CourrierAssignmentNotifier
         $escape = static fn (?string $value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
         return sprintf(
-            '<p>Bonjour %s,</p><p>Un courrier vous a été imputé avec le statut <strong>En cours</strong>.</p><ul><li><strong>Référence:</strong> %s</li><li><strong>Objet:</strong> %s</li><li><strong>Nature:</strong> %s</li><li><strong>Date du courrier:</strong> %s</li><li><strong>Interlocuteur:</strong> %s</li><li><strong>Échéance de réponse:</strong> %s</li></ul><p><a href="%s">Consulter le courrier</a></p>',
+            '<p>Bonjour %s,</p><p>Un courrier vous a été imputé.</p><ul><li><strong>Référence:</strong> %s</li><li><strong>Objet:</strong> %s</li><li><strong>Nature:</strong> %s</li><li><strong>Date du courrier:</strong> %s</li><li><strong>Interlocuteur:</strong> %s</li><li><strong>Échéance de réponse:</strong> %s</li></ul><p>Consulter le courrier auprès de votre gestionnaire de courriers</p>',
             $escape($recipient->getFullName() ?: $recipient->getEmail()),
             $escape($courrier->getReference()),
             $escape($courrier->getSubject()),
