@@ -9,6 +9,7 @@ use App\Form\CourrierType;
 use App\Repository\CourrierRepository;
 use App\Repository\DestinataireRepository;
 use App\Repository\UserRepository;
+use App\Service\CourrierAssignmentNotifier;
 use App\Service\CourrierExportService;
 use App\Service\CourrierListProvider;
 use App\Service\CourrierUrgencyUpdater;
@@ -98,7 +99,7 @@ class CourrierController extends AbstractController
 
     #[Route('/nouveau', name: 'app_courrier_new', methods: ['GET', 'POST'])]
     #[IsGranted('ROLE_COURRIER_EDIT')]
-    public function new(Request $request, EntityManagerInterface $entityManager): Response
+    public function new(Request $request, EntityManagerInterface $entityManager, CourrierAssignmentNotifier $assignmentNotifier): Response
     {
         $courrier = new Courrier();
         $form = $this->createForm(CourrierType::class, $courrier, [
@@ -117,7 +118,9 @@ class CourrierController extends AbstractController
             if (!$courrier->getAssignedTo()->isEmpty()) {
                 $this->recordAction($entityManager, $courrier, CourrierAction::TYPE_ASSIGNED, 'Imputation initiale', $courrier->getAssignedToLabel());
             }
+            $usersToNotify = $this->assignmentNotificationRecipients($courrier, [], $courrier->getStatus());
             $entityManager->flush();
+            $this->notifyAssignmentIfNeeded($assignmentNotifier, $courrier, $usersToNotify);
 
             $this->addFlash('success', 'Le courrier a ete enregistre.');
 
@@ -150,11 +153,13 @@ class CourrierController extends AbstractController
 
     #[Route('/{id}/modifier', name: 'app_courrier_edit', methods: ['GET', 'POST'])]
     #[IsGranted('ROLE_COURRIER_EDIT')]
-    public function edit(Request $request, Courrier $courrier, EntityManagerInterface $entityManager): Response
+    public function edit(Request $request, Courrier $courrier, EntityManagerInterface $entityManager, CourrierAssignmentNotifier $assignmentNotifier): Response
     {
         $this->denyAccessToPendingDeletion($courrier, true);
 
         $before = $this->snapshotCourrier($courrier);
+        $previousAssignedUserIds = $this->assignedUserIds($courrier);
+        $previousStatus = $courrier->getStatus();
         $form = $this->createForm(CourrierType::class, $courrier, [
             'current_courrier' => $courrier,
             'can_validate' => $this->isGranted('ROLE_COURRIER_VALIDATE'),
@@ -172,7 +177,9 @@ class CourrierController extends AbstractController
             }
             $courrier->touch();
             $this->recordEditActions($entityManager, $courrier, $before);
+            $usersToNotify = $this->assignmentNotificationRecipients($courrier, $previousAssignedUserIds, $previousStatus);
             $entityManager->flush();
+            $this->notifyAssignmentIfNeeded($assignmentNotifier, $courrier, $usersToNotify);
 
             $this->addFlash('success', 'Le courrier a ete mis a jour.');
 
@@ -188,7 +195,7 @@ class CourrierController extends AbstractController
     }
 
     #[Route('/{id}/imputer', name: 'app_courrier_assign', methods: ['POST'])]
-    public function assign(Request $request, Courrier $courrier, EntityManagerInterface $entityManager, UserRepository $userRepository): RedirectResponse
+    public function assign(Request $request, Courrier $courrier, EntityManagerInterface $entityManager, UserRepository $userRepository, CourrierAssignmentNotifier $assignmentNotifier): RedirectResponse
     {
         $this->denyAccessToPendingDeletion($courrier, true);
 
@@ -204,6 +211,7 @@ class CourrierController extends AbstractController
         }
 
         $previousAssignedTo = $courrier->getAssignedToLabel();
+        $previousAssignedUserIds = $this->assignedUserIds($courrier);
         $previousStatus = $courrier->getStatus();
         $previousResponseNotes = $courrier->getResponseNotes();
 
@@ -261,7 +269,9 @@ class CourrierController extends AbstractController
             );
         }
 
+        $usersToNotify = $this->assignmentNotificationRecipients($courrier, $previousAssignedUserIds, $previousStatus);
         $entityManager->flush();
+        $this->notifyAssignmentIfNeeded($assignmentNotifier, $courrier, $usersToNotify);
 
         $this->addFlash('success', 'Le suivi du courrier a ete mis a jour.');
 
@@ -532,6 +542,64 @@ class CourrierController extends AbstractController
             ->setDetails($details);
 
         $entityManager->persist($action);
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function assignedUserIds(Courrier $courrier): array
+    {
+        $ids = [];
+
+        foreach ($courrier->getAssignedTo() as $assignedUser) {
+            if (null !== $assignedUser->getId()) {
+                $ids[] = $assignedUser->getId();
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
+     * @param list<int> $previousAssignedUserIds
+     *
+     * @return list<User>
+     */
+    private function assignmentNotificationRecipients(Courrier $courrier, array $previousAssignedUserIds, string $previousStatus): array
+    {
+        if (Courrier::STATUS_EN_COURS !== $courrier->getStatus()) {
+            return [];
+        }
+
+        $recipients = [];
+        $previousAssignedUserIds = array_flip($previousAssignedUserIds);
+        $notifyAllCurrentAssignees = Courrier::STATUS_EN_COURS !== $previousStatus;
+
+        foreach ($courrier->getAssignedTo() as $assignedUser) {
+            $assignedUserId = $assignedUser->getId();
+
+            if (null === $assignedUserId) {
+                continue;
+            }
+
+            if ($notifyAllCurrentAssignees || !isset($previousAssignedUserIds[$assignedUserId])) {
+                $recipients[$assignedUserId] = $assignedUser;
+            }
+        }
+
+        return array_values($recipients);
+    }
+
+    /**
+     * @param iterable<User> $users
+     */
+    private function notifyAssignmentIfNeeded(CourrierAssignmentNotifier $assignmentNotifier, Courrier $courrier, iterable $users): void
+    {
+        $result = $assignmentNotifier->notifyInProgressAssignment($courrier, $users);
+
+        if ($result['failed'] > 0) {
+            $this->addFlash('error', sprintf('%d notification(s) email n ont pas pu etre envoyee(s). Verifiez la configuration SMTP.', $result['failed']));
+        }
     }
 
     /**
