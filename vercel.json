@@ -15,7 +15,6 @@
     "APP_DEBUG": "0",
     "APP_SHARE_DIR": "/tmp/gestioncourrier-share",
     "APP_VAR_DIR": "/tmp/gestioncourrier/var",
-    "DATABASE_URL": "sqlite:////tmp/gestioncourrier/data_prod.db",
     "DEFAULT_URI": "https://gestioncourrier-sandy.vercel.app"
   }
 }
