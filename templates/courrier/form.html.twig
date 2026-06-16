@@ -100,7 +100,7 @@
                     <div class="full">
                         {{ form_row(form.attachment) }}
                         {% if courrier.attachmentFilename %}
-                            <p>Pièce actuelle: <a href="{{ asset('uploads/courriers/' ~ courrier.attachmentFilename) }}" target="_blank">{{ courrier.attachmentFilename }}</a></p>
+                            <p>Pièce actuelle: <a href="{{ path('app_courrier_attachment', {id: courrier.id}) }}" target="_blank">{{ courrier.attachmentFilename }}</a></p>
                         {% endif %}
                     </div>
                 </div>

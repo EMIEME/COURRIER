@@ -7,6 +7,7 @@ use App\Entity\Destinataire;
 use App\Entity\User;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -26,12 +27,69 @@ class CourrierRepository extends ServiceEntityRepository
      */
     public function search(array $filters): array
     {
-        $qb = $this->createQueryBuilder('c')
-            ->leftJoin('c.assignedTo', 'assignedTo')
-            ->addSelect('assignedTo')
-            ->distinct()
-            ->orderBy('c.mailDate', 'DESC')
-            ->addOrderBy('c.id', 'DESC');
+        return $this->createSearchQueryBuilder($filters)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @param array<string, mixed> $filters
+     *
+     * @return list<Courrier>
+     */
+    public function searchPaginated(array $filters, int $page, int $limit): array
+    {
+        $page = max(1, $page);
+        $limit = max(1, $limit);
+
+        $query = $this->createSearchQueryBuilder($filters)
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit)
+            ->getQuery();
+
+        return iterator_to_array((new Paginator($query, true))->getIterator(), false);
+    }
+
+    /**
+     * @param array<string, mixed> $filters
+     */
+    public function countSearch(array $filters): int
+    {
+        return (int) $this->createSearchQueryBuilder($filters, false)
+            ->select('COUNT(DISTINCT c.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * @param array<string, mixed> $filters
+     */
+    private function createSearchQueryBuilder(array $filters, bool $forResults = true): \Doctrine\ORM\QueryBuilder
+    {
+        $qb = $this->createQueryBuilder('c');
+
+        if ($forResults) {
+            $qb
+                ->leftJoin('c.assignedTo', 'assignedTo')
+                ->addSelect('assignedTo')
+                ->distinct();
+
+            if (!empty($filters['prioritizeUrgent'])) {
+                $qb
+                    ->addSelect('CASE WHEN c.status = :urgentStatus THEN 0 ELSE 1 END AS HIDDEN urgencyPriority')
+                    ->addSelect('CASE WHEN c.responseDueAt IS NULL THEN 1 ELSE 0 END AS HIDDEN dueDateMissing')
+                    ->setParameter('urgentStatus', Courrier::STATUS_URGENT)
+                    ->orderBy('urgencyPriority', 'ASC')
+                    ->addOrderBy('dueDateMissing', 'ASC')
+                    ->addOrderBy('c.responseDueAt', 'ASC')
+                    ->addOrderBy('c.mailDate', 'DESC')
+                    ->addOrderBy('c.id', 'DESC');
+            } else {
+                $qb
+                    ->orderBy('c.mailDate', 'DESC')
+                    ->addOrderBy('c.id', 'DESC');
+            }
+        }
 
         if (!empty($filters['pendingDeletion'])) {
             $qb->andWhere('c.deletionRequestedAt IS NOT NULL');
@@ -79,7 +137,7 @@ class CourrierRepository extends ServiceEntityRepository
                 ->setParameter('dateTo', new \DateTimeImmutable((string) $filters['dateTo']), Types::DATE_IMMUTABLE);
         }
 
-        return $qb->getQuery()->getResult();
+        return $qb;
     }
 
     public function countLinkedToDestinataire(Destinataire $destinataire): int
@@ -181,6 +239,27 @@ class CourrierRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
+    public function countUpcomingDueForUser(User $user, \DateTimeInterface $from, \DateTimeInterface $to): int
+    {
+        return (int) $this->createUpcomingDueForUserQueryBuilder($user, $from, $to)
+            ->select('COUNT(DISTINCT c.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * @return list<Courrier>
+     */
+    public function findUpcomingDueForUser(User $user, \DateTimeInterface $from, \DateTimeInterface $to, int $limit = 3): array
+    {
+        return $this->createUpcomingDueForUserQueryBuilder($user, $from, $to)
+            ->orderBy('c.responseDueAt', 'ASC')
+            ->addOrderBy('c.id', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
     /**
      * @param array<string, mixed> $filters
      */
@@ -195,5 +274,20 @@ class CourrierRepository extends ServiceEntityRepository
             $qb->andWhere('c.mailDate <= :countDateTo')
                 ->setParameter('countDateTo', new \DateTimeImmutable((string) $filters['dateTo']), Types::DATE_IMMUTABLE);
         }
+    }
+
+    private function createUpcomingDueForUserQueryBuilder(User $user, \DateTimeInterface $from, \DateTimeInterface $to): \Doctrine\ORM\QueryBuilder
+    {
+        return $this->createQueryBuilder('c')
+            ->andWhere(':assignedTo MEMBER OF c.assignedTo')
+            ->andWhere('c.status != :treatedStatus')
+            ->andWhere('c.responseDueAt IS NOT NULL')
+            ->andWhere('c.responseDueAt >= :fromDate')
+            ->andWhere('c.responseDueAt <= :toDate')
+            ->andWhere('c.deletionRequestedAt IS NULL')
+            ->setParameter('assignedTo', $user)
+            ->setParameter('treatedStatus', Courrier::STATUS_TRAITE)
+            ->setParameter('fromDate', \DateTimeImmutable::createFromInterface($from), Types::DATE_IMMUTABLE)
+            ->setParameter('toDate', \DateTimeImmutable::createFromInterface($to), Types::DATE_IMMUTABLE);
     }
 }

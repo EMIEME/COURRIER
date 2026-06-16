@@ -15,6 +15,7 @@ use App\Service\CourrierListProvider;
 use App\Service\CourrierUrgencyUpdater;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -36,13 +37,13 @@ class CourrierController extends AbstractController
         $filters = $this->buildSearchFilters($request, $userRepository, $destinataireRepository);
         $perPage = 10;
         $page = max(1, $request->query->getInt('page', 1));
-        $courriers = $courrierRepository->search($filters);
-        $totalCourriers = count($courriers);
+        $totalCourriers = $courrierRepository->countSearch($filters);
         $totalPages = max(1, (int) ceil($totalCourriers / $perPage));
         $page = min($page, $totalPages);
+        $courriers = $courrierRepository->searchPaginated($filters, $page, $perPage);
 
         return $this->render('courrier/index.html.twig', [
-            'courriers' => array_slice($courriers, ($page - 1) * $perPage, $perPage),
+            'courriers' => $courriers,
             'filters' => $request->query->all(),
             'pagination' => [
                 'page' => $page,
@@ -52,6 +53,58 @@ class CourrierController extends AbstractController
             ],
             'isPendingDeletionView' => !empty($filters['pendingDeletion']),
             'pendingDeletionCount' => $this->isGranted('ROLE_ADMIN') ? $courrierRepository->countPendingDeletion() : 0,
+            'selectedDestinataire' => $filters['destinataire'] ?? null,
+            'statuses' => $listProvider->statusChoices(),
+            'directions' => $listProvider->natureChoices(),
+            'statusLabels' => $listProvider->statusLabels(),
+            'directionLabels' => $listProvider->natureLabels(),
+            'users' => $userRepository->findAssignableUsers(),
+        ]);
+    }
+
+    #[Route('/mes-courriers', name: 'app_courrier_mine', methods: ['GET'])]
+    #[IsGranted('ROLE_COURRIER_VIEW')]
+    public function mine(Request $request, CourrierRepository $courrierRepository, UserRepository $userRepository, DestinataireRepository $destinataireRepository, CourrierListProvider $listProvider, CourrierUrgencyUpdater $urgencyUpdater): Response
+    {
+        $currentUser = $this->getCurrentUser();
+        if (!$currentUser) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $urgencyUpdater->updateOverdueCourriers();
+
+        $filters = $this->buildSearchFilters($request, $userRepository, $destinataireRepository);
+        $filters['assignedTo'] = $currentUser;
+        $filters['pendingDeletion'] = false;
+        $filters['prioritizeUrgent'] = true;
+        $perPage = 10;
+        $page = max(1, $request->query->getInt('page', 1));
+        $totalCourriers = $courrierRepository->countSearch($filters);
+        $totalPages = max(1, (int) ceil($totalCourriers / $perPage));
+        $page = min($page, $totalPages);
+        $courriers = $courrierRepository->searchPaginated($filters, $page, $perPage);
+        $viewFilters = $request->query->all();
+        unset($viewFilters['assignedTo'], $viewFilters['pendingDeletion']);
+
+        return $this->render('courrier/index.html.twig', [
+            'courriers' => $courriers,
+            'filters' => $viewFilters,
+            'exportFilters' => array_merge($viewFilters, ['assignedTo' => $currentUser->getId()]),
+            'pagination' => [
+                'page' => $page,
+                'perPage' => $perPage,
+                'total' => $totalCourriers,
+                'totalPages' => $totalPages,
+            ],
+            'pageTitle' => 'Mes courriers',
+            'pageDescription' => 'Courriers qui vous sont imputés, avec les urgences et échéances en priorité.',
+            'listRoute' => 'app_courrier_mine',
+            'emptyMessage' => 'Aucun courrier ne vous est actuellement imputé.',
+            'isMineView' => true,
+            'showAssignedFilter' => false,
+            'showPendingDeletionActions' => false,
+            'isPendingDeletionView' => false,
+            'pendingDeletionCount' => 0,
             'selectedDestinataire' => $filters['destinataire'] ?? null,
             'statuses' => $listProvider->statusChoices(),
             'directions' => $listProvider->natureChoices(),
@@ -151,6 +204,29 @@ class CourrierController extends AbstractController
         ]);
     }
 
+    #[Route('/{id}/piece-jointe', name: 'app_courrier_attachment', methods: ['GET'])]
+    #[IsGranted('ROLE_COURRIER_VIEW')]
+    public function attachment(Request $request, Courrier $courrier): BinaryFileResponse
+    {
+        $this->denyAccessToPendingDeletion($courrier);
+
+        $attachmentPath = $this->attachmentFullPath($courrier->getAttachmentFilename());
+        if (!$attachmentPath) {
+            throw $this->createNotFoundException('Piece jointe introuvable.');
+        }
+
+        $disposition = $request->query->getBoolean('download')
+            ? ResponseHeaderBag::DISPOSITION_ATTACHMENT
+            : ResponseHeaderBag::DISPOSITION_INLINE;
+
+        $response = new BinaryFileResponse($attachmentPath);
+        $response->setContentDisposition($disposition, basename($attachmentPath));
+        $response->headers->set('Content-Type', mime_content_type($attachmentPath) ?: 'application/octet-stream');
+        $response->headers->set('X-Content-Type-Options', 'nosniff');
+
+        return $response;
+    }
+
     #[Route('/{id}/modifier', name: 'app_courrier_edit', methods: ['GET', 'POST'])]
     #[IsGranted('ROLE_COURRIER_EDIT')]
     public function edit(Request $request, Courrier $courrier, EntityManagerInterface $entityManager, CourrierAssignmentNotifier $assignmentNotifier): Response
@@ -179,6 +255,12 @@ class CourrierController extends AbstractController
             $this->recordEditActions($entityManager, $courrier, $before);
             $usersToNotify = $this->assignmentNotificationRecipients($courrier, $previousAssignedUserIds, $previousStatus);
             $entityManager->flush();
+            if ($uploadedNewAttachment) {
+                $attachmentDeleteWarning = $this->deleteAttachmentFile($before['Fichier'] ?? '', $courrier->getAttachmentFilename());
+                if ($attachmentDeleteWarning) {
+                    $this->addFlash('error', $attachmentDeleteWarning);
+                }
+            }
             $this->notifyAssignmentIfNeeded($assignmentNotifier, $courrier, $usersToNotify);
 
             $this->addFlash('success', 'Le courrier a ete mis a jour.');
@@ -322,8 +404,14 @@ class CourrierController extends AbstractController
             return $this->redirectToRoute('app_courrier_show', ['id' => $courrier->getId()]);
         }
 
+        $attachmentToDelete = $courrier->getAttachmentFilename();
+
         $entityManager->remove($courrier);
         $entityManager->flush();
+        $attachmentDeleteWarning = $this->deleteAttachmentFile($attachmentToDelete);
+        if ($attachmentDeleteWarning) {
+            $this->addFlash('error', $attachmentDeleteWarning);
+        }
         $this->addFlash('success', 'La suppression du courrier a ete approuvee et executee.');
 
         return $this->redirectToRoute('app_courrier_index', ['pendingDeletion' => 1]);
@@ -484,6 +572,58 @@ class CourrierController extends AbstractController
             'hash' => strtolower($matches[1]),
             'extension' => strtolower($matches[2]),
         ];
+    }
+
+    private function deleteAttachmentFile(?string $attachmentPath, ?string $replacementPath = null): ?string
+    {
+        $attachmentPath = trim((string) $attachmentPath);
+        $replacementPath = trim((string) $replacementPath);
+
+        if ('' === $attachmentPath || $attachmentPath === $replacementPath) {
+            return null;
+        }
+
+        if (str_starts_with($attachmentPath, DIRECTORY_SEPARATOR) || str_contains($attachmentPath, '..')) {
+            return 'L ancienne piece jointe n a pas ete supprimee car son chemin est invalide.';
+        }
+
+        $uploadsDirectory = $this->uploadsBaseDirectory();
+        $attachmentFullPath = $uploadsDirectory.DIRECTORY_SEPARATOR.$attachmentPath;
+        $uploadsRealPath = realpath($uploadsDirectory);
+        $attachmentRealPath = realpath($attachmentFullPath);
+
+        if (!$uploadsRealPath || !$attachmentRealPath || !str_starts_with($attachmentRealPath, $uploadsRealPath.DIRECTORY_SEPARATOR)) {
+            return null;
+        }
+
+        if (!is_file($attachmentRealPath)) {
+            return null;
+        }
+
+        if (!@unlink($attachmentRealPath)) {
+            return 'L ancienne piece jointe n a pas pu etre supprimee du disque.';
+        }
+
+        return null;
+    }
+
+    private function attachmentFullPath(?string $attachmentPath): ?string
+    {
+        $attachmentPath = trim((string) $attachmentPath);
+
+        if ('' === $attachmentPath || str_starts_with($attachmentPath, DIRECTORY_SEPARATOR) || str_contains($attachmentPath, '..')) {
+            return null;
+        }
+
+        $uploadsDirectory = $this->uploadsBaseDirectory();
+        $uploadsRealPath = realpath($uploadsDirectory);
+        $attachmentRealPath = realpath($uploadsDirectory.DIRECTORY_SEPARATOR.$attachmentPath);
+
+        if (!$uploadsRealPath || !$attachmentRealPath || !str_starts_with($attachmentRealPath, $uploadsRealPath.DIRECTORY_SEPARATOR)) {
+            return null;
+        }
+
+        return is_file($attachmentRealPath) ? $attachmentRealPath : null;
     }
 
     private function uploadsBaseDirectory(): string

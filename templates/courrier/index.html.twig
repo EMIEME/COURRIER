@@ -1,15 +1,24 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Trouver un courrier{% endblock %}
+{% block title %}{{ pageTitle|default('Trouver un courrier') }}{% endblock %}
 
 {% block body %}
+    {% set pageTitle = pageTitle|default('Trouver un courrier') %}
+    {% set pageDescription = pageDescription|default('Recherche multicritère par référence, date, interlocuteur, statut, imputation et contenu.') %}
+    {% set listRoute = listRoute|default('app_courrier_index') %}
+    {% set exportFilters = exportFilters|default(filters) %}
+    {% set emptyMessage = emptyMessage|default('Aucun resultat.') %}
+    {% set showAssignedFilter = showAssignedFilter is defined ? showAssignedFilter : true %}
+    {% set showPendingDeletionActions = showPendingDeletionActions is defined ? showPendingDeletionActions : true %}
+    {% set isMineView = isMineView is defined ? isMineView : false %}
+
     <div class="topbar page-band">
         <div>
-            <h1>Trouver un courrier</h1>
-            <p>Recherche multicritère par référence, date, interlocuteur, statut, imputation et contenu.</p>
+            <h1>{{ pageTitle }}</h1>
+            <p>{{ pageDescription }}</p>
         </div>
         <div class="actions">
-            <a class="button secondary export-button" href="{{ path('app_courrier_export', filters|merge({format: 'excel'})) }}" title="Exporter la liste filtree vers Excel">
+            <a class="button secondary export-button" href="{{ path('app_courrier_export', exportFilters|merge({format: 'excel'})) }}" title="Exporter la liste filtree vers Excel">
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                     <path d="M14 2v6h6"/>
@@ -18,7 +27,7 @@
                 </svg>
                 Excel
             </a>
-            <a class="button secondary export-button" href="{{ path('app_courrier_export', filters|merge({format: 'pdf'})) }}" title="Exporter la liste filtree en PDF">
+            <a class="button secondary export-button" href="{{ path('app_courrier_export', exportFilters|merge({format: 'pdf'})) }}" title="Exporter la liste filtree en PDF">
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                     <path d="M14 2v6h6"/>
@@ -27,10 +36,13 @@
                 </svg>
                 PDF
             </a>
+            {% if isMineView %}
+                <a class="button secondary" href="{{ path('app_courrier_index') }}">Tous les courriers</a>
+            {% endif %}
             {% if is_granted('ROLE_COURRIER_EDIT') %}
                 <a class="button" href="{{ path('app_courrier_new') }}">Enregistrer un courrier</a>
             {% endif %}
-            {% if is_granted('ROLE_ADMIN') %}
+            {% if showPendingDeletionActions and is_granted('ROLE_ADMIN') %}
                 {% if isPendingDeletionView %}
                     <a class="button secondary" href="{{ path('app_courrier_index') }}">Courriers actifs</a>
                 {% else %}
@@ -40,7 +52,7 @@
         </div>
     </div>
 
-    <form class="form-panel" method="get" action="{{ path('app_courrier_index') }}" style="margin-bottom: 16px;">
+    <form class="form-panel" method="get" action="{{ path(listRoute) }}" style="margin-bottom: 16px;">
         <div class="filters">
             {% if filters.destinataire|default('') %}
                 <input type="hidden" name="destinataire" value="{{ filters.destinataire }}">
@@ -79,18 +91,20 @@
                 <label for="dateTo">Au</label>
                 <input type="date" id="dateTo" name="dateTo" value="{{ filters.dateTo|default('') }}">
             </div>
-            <div>
-                <label for="assignedTo">Imputer à</label>
-                <select id="assignedTo" name="assignedTo">
-                    <option value="">Tous</option>
-                    {% for user in users %}
-                        <option value="{{ user.id }}" {{ filters.assignedTo|default('') == user.id ? 'selected' : '' }}>{{ user.fullName }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+            {% if showAssignedFilter %}
+                <div>
+                    <label for="assignedTo">Imputer à</label>
+                    <select id="assignedTo" name="assignedTo">
+                        <option value="">Tous</option>
+                        {% for user in users %}
+                            <option value="{{ user.id }}" {{ filters.assignedTo|default('') == user.id ? 'selected' : '' }}>{{ user.fullName }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
             <div style="align-self: end;" class="actions">
                 <button type="submit">Rechercher</button>
-                <a class="button secondary" href="{{ path('app_courrier_index') }}">Reinitialiser</a>
+                <a class="button secondary" href="{{ path(listRoute) }}">Reinitialiser</a>
             </div>
         </div>
     </form>
@@ -102,7 +116,7 @@
                     <strong>Filtre destinataire actif</strong>
                     <p>Courriers lies a {{ selectedDestinataire.name }} comme emetteur ou destinataire.</p>
                 </div>
-                <a class="button secondary" href="{{ path('app_courrier_index') }}">Retirer le filtre</a>
+                <a class="button secondary" href="{{ path(listRoute) }}">Retirer le filtre</a>
             </div>
         </div>
     {% endif %}
@@ -170,7 +184,7 @@
                                 </a>
                             {% endif %}
                             {% if courrier.attachmentFilename %}
-                                <a class="button compact icon-only action-file" href="{{ asset('uploads/courriers/' ~ courrier.attachmentFilename) }}" target="_blank" title="Ouvrir le fichier" aria-label="Ouvrir le fichier joint du courrier {{ courrier.reference }}">
+                                <a class="button compact icon-only action-file" href="{{ path('app_courrier_attachment', {id: courrier.id}) }}" target="_blank" title="Ouvrir le fichier" aria-label="Ouvrir le fichier joint du courrier {{ courrier.reference }}">
                                     <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                                         <path d="M14 2v6h6"/>
@@ -183,7 +197,7 @@
                     </td>
                 </tr>
             {% else %}
-                <tr><td colspan="7" class="muted">Aucun resultat.</td></tr>
+                <tr><td colspan="7" class="muted">{{ emptyMessage }}</td></tr>
             {% endfor %}
             </tbody>
         </table>
@@ -194,10 +208,10 @@
             </span>
             <div class="actions">
                 {% if pagination.page > 1 %}
-                    <a class="button secondary" href="{{ path('app_courrier_index', paginationParams|merge({page: pagination.page - 1})) }}">Précédent</a>
+                    <a class="button secondary" href="{{ path(listRoute, paginationParams|merge({page: pagination.page - 1})) }}">Précédent</a>
                 {% endif %}
                 {% if pagination.page < pagination.totalPages %}
-                    <a class="button secondary" href="{{ path('app_courrier_index', paginationParams|merge({page: pagination.page + 1})) }}">Suivant</a>
+                    <a class="button secondary" href="{{ path(listRoute, paginationParams|merge({page: pagination.page + 1})) }}">Suivant</a>
                 {% endif %}
             </div>
         </div>

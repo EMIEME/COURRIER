@@ -84,6 +84,135 @@
                     width: 34px;
                 }
 
+                .notification-center {
+                    margin-bottom: 14px;
+                    position: relative;
+                }
+
+                .notification-center summary {
+                    align-items: center;
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(255, 255, 255, 0.16);
+                    border-radius: 8px;
+                    color: #f7fbf6;
+                    cursor: pointer;
+                    display: flex;
+                    gap: 10px;
+                    list-style: none;
+                    min-height: 44px;
+                    padding: 9px 10px;
+                    user-select: none;
+                }
+
+                .notification-center summary::-webkit-details-marker { display: none; }
+                .notification-center[open] summary {
+                    background: #fff4e8;
+                    color: var(--primary-strong);
+                }
+
+                .notification-center__icon {
+                    align-items: center;
+                    background: rgba(255, 255, 255, 0.12);
+                    border-radius: 8px;
+                    display: inline-flex;
+                    flex: 0 0 30px;
+                    height: 30px;
+                    justify-content: center;
+                    width: 30px;
+                }
+
+                .notification-center[open] .notification-center__icon {
+                    background: rgba(214, 106, 0, 0.14);
+                }
+
+                .notification-center__icon svg {
+                    display: block;
+                    height: 18px;
+                    stroke: currentColor;
+                    width: 18px;
+                }
+
+                .notification-center__label {
+                    flex: 1;
+                    font-weight: 750;
+                    min-width: 0;
+                }
+
+                .notification-badge {
+                    align-items: center;
+                    background: var(--accent);
+                    border-radius: 999px;
+                    color: #fff;
+                    display: inline-flex;
+                    flex: 0 0 auto;
+                    font-size: 12px;
+                    font-weight: 850;
+                    justify-content: center;
+                    min-width: 24px;
+                    padding: 3px 7px;
+                }
+
+                .notification-panel {
+                    background: #fff;
+                    border: 1px solid #d7e4d1;
+                    border-radius: 8px;
+                    box-shadow: 0 16px 36px rgba(14, 32, 22, 0.24);
+                    color: var(--text);
+                    display: grid;
+                    gap: 8px;
+                    margin-top: 8px;
+                    max-height: 360px;
+                    overflow: auto;
+                    padding: 10px;
+                }
+
+                .notification-panel__head {
+                    align-items: center;
+                    display: flex;
+                    gap: 8px;
+                    justify-content: space-between;
+                    padding: 2px 2px 8px;
+                }
+
+                .notification-panel__head strong {
+                    color: var(--primary-strong);
+                    font-size: 14px;
+                }
+
+                .notification-item {
+                    border: 1px solid var(--border);
+                    border-left: 4px solid var(--primary);
+                    border-radius: 8px;
+                    display: grid;
+                    gap: 4px;
+                    padding: 10px;
+                }
+
+                .notification-item:hover {
+                    background: #fbfdf9;
+                    border-color: #bdd2b6;
+                }
+
+                .notification-item--warning { border-left-color: var(--warning); }
+                .notification-item--danger { border-left-color: var(--accent); }
+                .notification-item strong {
+                    color: var(--text);
+                    font-size: 14px;
+                }
+                .notification-item p {
+                    color: var(--muted);
+                    font-size: 12px;
+                    line-height: 1.45;
+                }
+                .notification-empty {
+                    background: #f7faf4;
+                    border: 1px dashed #cfe0c8;
+                    border-radius: 8px;
+                    color: var(--muted);
+                    font-size: 13px;
+                    padding: 12px;
+                }
+
                 .nav { display: grid; gap: 6px; }
 
                 .nav a {
@@ -491,6 +620,55 @@
                 .detail-list div { border-bottom: 1px solid var(--border); padding-bottom: 12px; }
                 .detail-list dt { color: var(--muted); font-weight: 800; margin-bottom: 4px; }
                 .detail-list dd { margin: 0; }
+                .attachment-name {
+                    color: #33463a;
+                    display: block;
+                    font-weight: 750;
+                    margin-bottom: 10px;
+                    overflow-wrap: anywhere;
+                }
+                .attachment-actions { margin-top: 8px; }
+                .attachment-preview {
+                    border-top: 1px solid var(--border);
+                    display: grid;
+                    gap: 12px;
+                    margin-top: 18px;
+                    padding-top: 16px;
+                }
+                .attachment-preview__header {
+                    align-items: center;
+                    display: flex;
+                    gap: 12px;
+                    justify-content: space-between;
+                }
+                .attachment-preview__header h2 { margin: 0; }
+                .attachment-preview iframe,
+                .attachment-preview img {
+                    background: #f8faf6;
+                    border: 1px solid var(--border);
+                    border-radius: 8px;
+                    width: 100%;
+                }
+                .attachment-preview iframe {
+                    aspect-ratio: 4 / 3;
+                    min-height: 560px;
+                }
+                .attachment-preview img {
+                    display: block;
+                    max-height: 720px;
+                    object-fit: contain;
+                }
+                .attachment-preview__empty {
+                    background: #fbfdf9;
+                    border: 1px dashed #bfd4b7;
+                    border-radius: 8px;
+                    padding: 18px;
+                }
+                .attachment-preview__empty strong {
+                    color: var(--text);
+                    display: block;
+                    margin-bottom: 4px;
+                }
                 .login-page {
                     align-items: center;
                     background:
@@ -696,6 +874,7 @@
                     .login-intro h1 { font-size: 32px; }
                     .login-features { display: none; }
                     .login-card { padding: 22px; }
+                    .attachment-preview iframe { min-height: 420px; }
                 }
             </style>
         {% endblock %}
@@ -862,28 +1041,71 @@
                         </span>
                         <span>Gestion Courrier</span>
                     </a>
+                    {% set notificationCenter = app_notifications(app.user) %}
+                    <details class="notification-center">
+                        <summary aria-label="Notifications">
+                            <span class="notification-center__icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                                </svg>
+                            </span>
+                            <span class="notification-center__label">Notifications</span>
+                            {% if notificationCenter.count > 0 %}
+                                <span class="notification-badge">{{ notificationCenter.count > 99 ? '99+' : notificationCenter.count }}</span>
+                            {% endif %}
+                        </summary>
+                        <div class="notification-panel">
+                            <div class="notification-panel__head">
+                                <strong>Notifications</strong>
+                                {% if notificationCenter.count > 0 %}
+                                    <span class="badge">{{ notificationCenter.count }}</span>
+                                {% endif %}
+                            </div>
+                            {% for notification in notificationCenter.items %}
+                                <a class="notification-item notification-item--{{ notification.severity }}" href="{{ path(notification.route, notification.routeParams) }}">
+                                    <strong>{{ notification.title }}</strong>
+                                    <p>{{ notification.message }}</p>
+                                </a>
+                            {% else %}
+                                <p class="notification-empty">Aucune notification active.</p>
+                            {% endfor %}
+                        </div>
+                    </details>
                     <nav class="nav">
-                        <a class="{{ currentRoute == 'app_dashboard' ? 'active' : '' }}" href="{{ path('app_dashboard') }}">
-                            <span class="nav__icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="3" width="7" height="7"/>
-                                    <rect x="14" y="3" width="7" height="7"/>
-                                    <rect x="14" y="14" width="7" height="7"/>
-                                    <rect x="3" y="14" width="7" height="7"/>
-                                </svg>
-                            </span>
-                            <span>Tableau de bord</span>
-                        </a>
-                        <a class="{{ currentRoute in ['app_courrier_index', 'app_courrier_show', 'app_courrier_edit'] ? 'active' : '' }}" href="{{ path('app_courrier_index') }}">
-                            <span class="nav__icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="11" cy="11" r="7"/>
-                                    <path d="m16.5 16.5 4 4"/>
-                                    <path d="M8 11h6"/>
-                                </svg>
-                            </span>
-                            <span>Trouver un courrier</span>
-                        </a>
+                        {% if is_granted('ROLE_COURRIER_VIEW') %}
+                            <a class="{{ currentRoute == 'app_dashboard' ? 'active' : '' }}" href="{{ path('app_dashboard') }}">
+                                <span class="nav__icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="3" width="7" height="7"/>
+                                        <rect x="14" y="3" width="7" height="7"/>
+                                        <rect x="14" y="14" width="7" height="7"/>
+                                        <rect x="3" y="14" width="7" height="7"/>
+                                    </svg>
+                                </span>
+                                <span>Tableau de bord</span>
+                            </a>
+                            <a class="{{ currentRoute == 'app_courrier_mine' ? 'active' : '' }}" href="{{ path('app_courrier_mine') }}">
+                                <span class="nav__icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M4 4h16v16H4z"/>
+                                        <path d="M8 4v6h8V4"/>
+                                        <path d="M8 15h8"/>
+                                    </svg>
+                                </span>
+                                <span>Mes courriers</span>
+                            </a>
+                            <a class="{{ currentRoute in ['app_courrier_index', 'app_courrier_show', 'app_courrier_edit'] ? 'active' : '' }}" href="{{ path('app_courrier_index') }}">
+                                <span class="nav__icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="11" cy="11" r="7"/>
+                                        <path d="m16.5 16.5 4 4"/>
+                                        <path d="M8 11h6"/>
+                                    </svg>
+                                </span>
+                                <span>Trouver un courrier</span>
+                            </a>
+                        {% endif %}
                         {% if is_granted('ROLE_COURRIER_EDIT') %}
                             <a class="{{ currentRoute == 'app_courrier_new' ? 'active' : '' }}" href="{{ path('app_courrier_new') }}">
                                 <span class="nav__icon" aria-hidden="true">

@@ -7,6 +7,11 @@
     {% set hasSender = courrier.sender is not empty %}
     {% set hasRecipient = courrier.recipient is not empty %}
     {% set hasInterlocuteur = courrier.interlocuteurLabel not in ['Non renseigne', 'Non impute'] %}
+    {% set attachmentExtension = courrier.attachmentFilename ? courrier.attachmentFilename|split('.')|last|lower : '' %}
+    {% set attachmentUrl = courrier.attachmentFilename ? path('app_courrier_attachment', {id: courrier.id}) : '' %}
+    {% set attachmentDownloadUrl = courrier.attachmentFilename ? path('app_courrier_attachment', {id: courrier.id, download: 1}) : '' %}
+    {% set isPreviewableImage = attachmentExtension in ['jpg', 'jpeg', 'png', 'webp'] %}
+    {% set isPreviewablePdf = attachmentExtension == 'pdf' %}
 
     <div class="topbar">
         <div>
@@ -78,10 +83,33 @@
                 {% endif %}
                 {% if courrier.attachmentFilename %}
                     <div><dt>Pièce jointe</dt><dd>
-                        <a class="button secondary" href="{{ asset('uploads/courriers/' ~ courrier.attachmentFilename) }}" target="_blank">Ouvrir le document</a>
+                        <span class="attachment-name">{{ courrier.attachmentFilename|split('/')|last }}</span>
+                        <div class="actions attachment-actions">
+                            <a class="button secondary" href="{{ attachmentUrl }}" target="_blank">Ouvrir</a>
+                            <a class="button secondary" href="{{ attachmentDownloadUrl }}">Télécharger</a>
+                        </div>
                     </dd></div>
                 {% endif %}
             </dl>
+
+            {% if courrier.attachmentFilename %}
+                <section class="attachment-preview" aria-label="Prévisualisation de la pièce jointe">
+                    <div class="attachment-preview__header">
+                        <h2>Prévisualisation</h2>
+                        <a class="button secondary compact" href="{{ attachmentUrl }}" target="_blank">Plein écran</a>
+                    </div>
+                    {% if isPreviewableImage %}
+                        <img src="{{ attachmentUrl }}" alt="Prévisualisation de {{ courrier.reference }}">
+                    {% elseif isPreviewablePdf %}
+                        <iframe src="{{ attachmentUrl }}" title="Prévisualisation de {{ courrier.reference }}"></iframe>
+                    {% else %}
+                        <div class="attachment-preview__empty">
+                            <strong>Aperçu indisponible</strong>
+                            <p>Ce type de fichier peut être ouvert ou téléchargé avec les boutons ci-dessus.</p>
+                        </div>
+                    {% endif %}
+                </section>
+            {% endif %}
         </article>
 
         <aside class="form-panel">
