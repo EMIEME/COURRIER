@@ -1030,8 +1030,9 @@
         <div class="app-shell {{ app.user ? '' : 'app-shell--guest' }}">
             {% if app.user %}
                 {% set currentRoute = app.request.attributes.get('_route') %}
+                {% set homeRoute = is_granted('ROLE_COURRIER_VIEW') ? 'app_dashboard' : 'app_account_no_access' %}
                 <aside class="sidebar">
-                    <a class="brand" href="{{ path('app_dashboard') }}">
+                    <a class="brand" href="{{ path(homeRoute) }}">
                         <span class="brand__mark" aria-hidden="true">
                             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5z"/>
@@ -1118,6 +1119,8 @@
                                 </span>
                                 <span>Enregistrer nouveau</span>
                             </a>
+                        {% endif %}
+                        {% if is_granted('ROLE_SECRETARIAT') %}
                             <a class="{{ currentRoute starts with 'app_destinataire_' ? 'active' : '' }}" href="{{ path('app_destinataire_index') }}">
                                 <span class="nav__icon" aria-hidden="true">
                                     <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

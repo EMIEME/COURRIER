@@ -1,0 +1,20 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Acces a completer{% endblock %}
+
+{% block body %}
+    <div class="topbar page-band">
+        <div>
+            <h1>Acces a completer</h1>
+            <p>Votre compte est actif, mais aucun droit de consultation des courriers ne lui est encore attribue.</p>
+        </div>
+        <div class="actions">
+            <a class="button secondary" href="{{ path('app_logout') }}">Deconnexion</a>
+        </div>
+    </div>
+
+    <section class="form-panel">
+        <h2>Compte sans espace associe</h2>
+        <p>Demandez a un administrateur d'ajouter au moins la permission "Voir les courriers" pour acceder a l'application.</p>
+    </section>
+{% endblock %}

@@ -31,17 +31,17 @@ class DashboardController extends AbstractController
             'status' => $request->query->get('status'),
             'direction' => $request->query->get('direction'),
         ];
-        $filteredCourriers = $courrierRepository->search($tableFilters);
-        $totalCourriers = count($filteredCourriers);
+        $totalCourriers = $courrierRepository->countSearch($tableFilters);
         $totalPages = max(1, (int) ceil($totalCourriers / $perPage));
         $page = min($page, $totalPages);
+        $filteredCourriers = $courrierRepository->searchPaginated($tableFilters, $page, $perPage);
 
         return $this->render('dashboard/index.html.twig', [
             'filters' => $request->query->all(),
             'statusStats' => $courrierRepository->countByStatus($periodFilters),
             'directionStats' => $courrierRepository->countByDirection($periodFilters),
-            'urgentCourriers' => array_slice($courrierRepository->search([...$periodFilters, 'status' => Courrier::STATUS_URGENT]), 0, 6),
-            'filteredCourriers' => array_slice($filteredCourriers, ($page - 1) * $perPage, $perPage),
+            'urgentCourriers' => $courrierRepository->searchPaginated([...$periodFilters, 'status' => Courrier::STATUS_URGENT], 1, 6),
+            'filteredCourriers' => $filteredCourriers,
             'statusLabels' => $listProvider->statusLabels(),
             'directionLabels' => $listProvider->natureLabels(),
             'pagination' => [
