@@ -40,6 +40,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\Column(length: 100, nullable: true)]
+    private ?string $passwordResetToken = null;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeInterface $passwordResetRequestedAt = null;
+
+    #[ORM\Column(length: 100, nullable: true)]
     private ?string $service = null;
 
     /**
@@ -113,6 +119,47 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->password = $password;
 
         return $this;
+    }
+
+    public function getPasswordResetToken(): ?string
+    {
+        return $this->passwordResetToken;
+    }
+
+    public function setPasswordResetToken(?string $passwordResetToken): self
+    {
+        $this->passwordResetToken = $passwordResetToken ? trim($passwordResetToken) : null;
+
+        return $this;
+    }
+
+    public function getPasswordResetRequestedAt(): ?\DateTimeInterface
+    {
+        return $this->passwordResetRequestedAt;
+    }
+
+    public function setPasswordResetRequestedAt(?\DateTimeInterface $passwordResetRequestedAt): self
+    {
+        $this->passwordResetRequestedAt = $passwordResetRequestedAt;
+
+        return $this;
+    }
+
+    public function clearPasswordReset(): self
+    {
+        $this->passwordResetToken = null;
+        $this->passwordResetRequestedAt = null;
+
+        return $this;
+    }
+
+    public function isPasswordResetTokenExpired(int $ttl = 3600): bool
+    {
+        if (null === $this->passwordResetRequestedAt) {
+            return true;
+        }
+
+        return $this->passwordResetRequestedAt->getTimestamp() + $ttl < time();
     }
 
     public function eraseCredentials(): void
