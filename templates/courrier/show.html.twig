@@ -6,24 +6,49 @@
     {% set directionLabel = directionLabels[courrier.direction]|default(courrier.directionLabel) %}
     {% set hasSender = courrier.sender is not empty %}
     {% set hasRecipient = courrier.recipient is not empty %}
-    {% set hasInterlocuteur = courrier.interlocuteurLabel not in ['Non renseigne', 'Non impute'] %}
+    {% set hasInterlocuteur = courrier.interlocuteurLabel not in ['Non renseigné', 'Non imputé'] %}
     {% set attachmentExtension = courrier.attachmentFilename ? courrier.attachmentFilename|split('.')|last|lower : '' %}
     {% set attachmentUrl = courrier.attachmentFilename ? path('app_courrier_attachment', {id: courrier.id}) : '' %}
     {% set attachmentDownloadUrl = courrier.attachmentFilename ? path('app_courrier_attachment', {id: courrier.id, download: 1}) : '' %}
     {% set isPreviewableImage = attachmentExtension in ['jpg', 'jpeg', 'png', 'webp'] %}
     {% set isPreviewablePdf = attachmentExtension == 'pdf' %}
+    {% set dueTimestamp = courrier.responseDueAt ? courrier.responseDueAt|date('U') : null %}
+    {% set todayTimestamp = 'today'|date('U') %}
+    {% set dueState = dueTimestamp and dueTimestamp < todayTimestamp ? 'is-overdue' : (dueTimestamp == todayTimestamp ? 'is-today' : '') %}
 
-    <div class="topbar">
+    <nav class="breadcrumbs" aria-label="Fil d'Ariane">
+        <a href="{{ path('app_dashboard') }}">Tableau de bord</a>
+        <span class="breadcrumbs__separator" aria-hidden="true">/</span>
+        <a href="{{ path('app_courrier_index') }}">Courriers</a>
+        <span class="breadcrumbs__separator" aria-hidden="true">/</span>
+        <span aria-current="page">Détail courrier</span>
+    </nav>
+
+    <div class="topbar page-band">
         <div>
             <h1>{{ courrier.subject }}</h1>
-            <p>
-                {{ directionLabel }} - {{ courrier.mailDate|date('d/m/Y') }}
+            <div class="page-band__meta">
+                <span class="page-band__meta-item">{{ courrier.reference }}</span>
+                <span class="page-band__meta-item">{{ directionLabel }}</span>
+                <span class="page-band__meta-item">{{ courrier.mailDate|date('d/m/Y') }}</span>
                 {% if courrier.direction != 'note_interne' and hasInterlocuteur %}
-                    - {{ courrier.interlocuteurLabel }}
+                    <span class="page-band__meta-item">{{ courrier.interlocuteurLabel }}</span>
                 {% endif %}
-            </p>
+                <span class="badge {{ courrier.status }}">{{ courrier.statusLabel }}</span>
+                {% if courrier.responseDueAt %}
+                    <span class="record-due {{ dueState }}">
+                        {% if dueState == 'is-overdue' %}
+                            Échéance dépassée
+                        {% elseif dueState == 'is-today' %}
+                            Échéance aujourd'hui
+                        {% else %}
+                            Échéance le {{ courrier.responseDueAt|date('d/m/Y') }}
+                        {% endif %}
+                    </span>
+                {% endif %}
+            </div>
             {% if courrier.deletionPending %}
-                <p><span class="badge pending-deletion">Suppression en attente d approbation</span></p>
+                <p><span class="badge pending-deletion">Suppression en attente d'approbation</span></p>
             {% endif %}
         </div>
         <div class="actions">
@@ -34,183 +59,256 @@
         </div>
     </div>
 
-    <section class="grid two">
-        <article class="card">
-            <h2>Informations</h2>
-            <dl class="detail-list">
-                <div><dt>Statut</dt><dd><span class="badge {{ courrier.status }}">{{ courrier.statusLabel }}</span></dd></div>
-                <div><dt>Référence</dt><dd>{{ courrier.reference }}</dd></div>
-                <div><dt>Date du courrier</dt><dd>{{ courrier.mailDate|date('d/m/Y') }}</dd></div>
-                <div><dt>Nature</dt><dd>{{ directionLabel }}</dd></div>
-                {% if courrier.replyTo %}
+    <section class="courrier-detail">
+        <div class="courrier-detail__main">
+            <article class="record-panel record-panel--compact" data-loading-skeleton>
+                <div class="record-panel__header">
                     <div>
-                        <dt>Réponse au courrier</dt>
-                        <dd><a href="{{ path('app_courrier_show', {id: courrier.replyTo.id}) }}">{{ courrier.replyTo.reference }} - {{ courrier.replyTo.subject }}</a></dd>
-                    </div>
-                {% endif %}
-                {% if courrier.direction == 'entrant' and hasSender %}
-                    <div><dt>Emetteur</dt><dd>{{ courrier.sender }}</dd></div>
-                {% elseif courrier.direction == 'sortant' and hasRecipient %}
-                    <div><dt>Destinataire{{ courrier.destinataires|length > 1 ? 's' : '' }}</dt><dd>{{ courrier.recipient }}</dd></div>
-                {% elseif courrier.direction == 'note_interne' %}
-                    {% if hasSender %}
-                        <div><dt>Origine interne</dt><dd>{{ courrier.sender }}</dd></div>
-                    {% endif %}
-                    {% if hasRecipient %}
-                        <div><dt>Destinataire interne</dt><dd>{{ courrier.recipient }}</dd></div>
-                    {% endif %}
-                {% elseif hasInterlocuteur %}
-                    <div><dt>Interlocuteur</dt><dd>{{ courrier.interlocuteurLabel }}</dd></div>
-                {% endif %}
-                {% if courrier.localisation %}
-                    <div><dt>Localisation</dt><dd>{{ courrier.localisation }}</dd></div>
-                {% endif %}
-                {% if courrier.responseDueAt %}
-                    <div><dt>Échéance de réponse</dt><dd>{{ courrier.responseDueAt|date('d/m/Y') }}</dd></div>
-                {% endif %}
-                {% if courrier.replies|length > 0 %}
-                    <div>
-                        <dt>Réponses associées</dt>
-                        <dd>
-                            {% for reply in courrier.replies %}
-                                <a href="{{ path('app_courrier_show', {id: reply.id}) }}">{{ reply.reference }} - {{ reply.subject }}</a>{{ not loop.last ? ', ' : '' }}
-                            {% endfor %}
-                        </dd>
-                    </div>
-                {% endif %}
-                {% if courrier.content %}
-                    <div><dt>Contenu</dt><dd>{{ courrier.content|nl2br }}</dd></div>
-                {% endif %}
-                {% if courrier.attachmentFilename %}
-                    <div><dt>Pièce jointe</dt><dd>
-                        <span class="attachment-name">{{ courrier.attachmentFilename|split('/')|last }}</span>
-                        <div class="actions attachment-actions">
-                            <a class="button secondary" href="{{ attachmentUrl }}" target="_blank">Ouvrir</a>
-                            <a class="button secondary" href="{{ attachmentDownloadUrl }}">Télécharger</a>
-                        </div>
-                    </dd></div>
-                {% endif %}
-            </dl>
-
-            {% if courrier.attachmentFilename %}
-                <section class="attachment-preview" aria-label="Prévisualisation de la pièce jointe">
-                    <div class="attachment-preview__header">
-                        <h2>Prévisualisation</h2>
-                        <a class="button secondary compact" href="{{ attachmentUrl }}" target="_blank">Plein écran</a>
-                    </div>
-                    {% if isPreviewableImage %}
-                        <img src="{{ attachmentUrl }}" alt="Prévisualisation de {{ courrier.reference }}">
-                    {% elseif isPreviewablePdf %}
-                        <iframe src="{{ attachmentUrl }}" title="Prévisualisation de {{ courrier.reference }}"></iframe>
-                    {% else %}
-                        <div class="attachment-preview__empty">
-                            <strong>Aperçu indisponible</strong>
-                            <p>Ce type de fichier peut être ouvert ou téléchargé avec les boutons ci-dessus.</p>
-                        </div>
-                    {% endif %}
-                </section>
-            {% endif %}
-        </article>
-
-        <aside class="form-panel">
-            <h2>Workflow</h2>
-            {% if courrier.deletionPending %}
-                <p class="muted">Ce courrier est en attente de decision administrative pour sa suppression.</p>
-            {% elseif is_granted('ROLE_COURRIER_EDIT') or is_granted('ROLE_COURRIER_VALIDATE') %}
-                <form method="post" action="{{ path('app_courrier_assign', {id: courrier.id}) }}">
-                    <input type="hidden" name="_token" value="{{ csrf_token('assign' ~ courrier.id) }}">
-                    <div style="margin-bottom: 12px;">
-                        <label for="assignedTo">Imputer à</label>
-                        {% if is_granted('ROLE_COURRIER_EDIT') %}
-                            <select id="assignedTo" name="assignedTo[]" class="sr-only-select" data-autocomplete-select="true" data-placeholder="Rechercher une personne" multiple>
-                                {% for user in users %}
-                                    <option value="{{ user.id }}" {{ courrier.assignedTo.contains(user) ? 'selected' : '' }}>{{ user.fullName }}</option>
-                                {% endfor %}
-                            </select>
-                        {% else %}
-                            <p>{{ courrier.assignedToLabel }}</p>
-                        {% endif %}
-                    </div>
-                    <div style="margin-bottom: 12px;">
-                        <label for="status">Statut</label>
-                        {% if is_granted('ROLE_COURRIER_VALIDATE') %}
-                            <select id="status" name="status">
-                                {% for label, value in statuses %}
-                                    <option value="{{ value }}" {{ courrier.status == value ? 'selected' : '' }}>{{ label }}</option>
-                                {% endfor %}
-                            </select>
-                        {% else %}
-                            <input type="hidden" name="status" value="{{ courrier.status }}">
-                            <p><span class="badge {{ courrier.status }}">{{ courrier.statusLabel }}</span></p>
-                        {% endif %}
-                    </div>
-                    <div style="margin-bottom: 12px;">
-                        <label for="responseNotes">Suivi / réponse</label>
-                        {% if is_granted('ROLE_COURRIER_EDIT') %}
-                            <textarea id="responseNotes" name="responseNotes" rows="6">{{ courrier.responseNotes }}</textarea>
-                        {% else %}
-                            <p>{{ courrier.responseNotes ?: 'Non renseigné' }}</p>
-                        {% endif %}
-                    </div>
-                    <button type="submit">Mettre à jour le suivi</button>
-                </form>
-            {% else %}
-                <p class="muted">Vous pouvez consulter le workflow, mais vous n'avez pas la permission de le modifier.</p>
-                <dl class="detail-list">
-                    <div><dt>Imputation</dt><dd>{{ courrier.assignedToLabel }}</dd></div>
-                    <div><dt>Statut</dt><dd><span class="badge {{ courrier.status }}">{{ courrier.statusLabel }}</span></dd></div>
-                    <div><dt>Suivi / réponse</dt><dd>{{ courrier.responseNotes ?: 'Non renseigné' }}</dd></div>
-                </dl>
-            {% endif %}
-
-            {% if courrier.deletionPending and is_granted('ROLE_ADMIN') %}
-                <div class="form-panel" style="margin-top: 14px;">
-                    <h2>Decision administrateur</h2>
-                    <p>
-                        Demande faite par {{ courrier.deletionRequestedBy ? courrier.deletionRequestedBy.fullName : 'Utilisateur inconnu' }}
-                        le {{ courrier.deletionRequestedAt ? courrier.deletionRequestedAt|date('d/m/Y H:i') : 'date inconnue' }}.
-                    </p>
-                    <div class="actions" style="margin-top: 12px;">
-                        <form method="post" action="{{ path('app_courrier_delete_approve', {id: courrier.id}) }}" onsubmit="return confirm('Approuver la suppression definitive de ce courrier ?');">
-                            <input type="hidden" name="_token" value="{{ csrf_token('approve-delete' ~ courrier.id) }}">
-                            <button class="danger" type="submit">Approuver la suppression</button>
-                        </form>
-                        <form method="post" action="{{ path('app_courrier_delete_reject', {id: courrier.id}) }}">
-                            <input type="hidden" name="_token" value="{{ csrf_token('reject-delete' ~ courrier.id) }}">
-                            <button class="secondary" type="submit">Refuser</button>
-                        </form>
+                        <h2>Informations clés</h2>
+                        <p>Contact, classement et liens associés.</p>
                     </div>
                 </div>
-            {% elseif is_granted('ROLE_COURRIER_DELETE') %}
-                <form method="post" action="{{ path('app_courrier_delete', {id: courrier.id}) }}" style="margin-top: 14px;" onsubmit="return confirm('Supprimer ce courrier ?');">
-                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ courrier.id) }}">
-                    <button class="danger" type="submit">Demander la suppression</button>
-                </form>
-            {% endif %}
+                <dl class="record-meta-grid record-meta-grid--compact">
+                    {% if courrier.direction == 'entrant' %}
+                        <div><dt>Émetteur</dt><dd>{{ courrier.senderLabel }}</dd></div>
+                    {% elseif courrier.direction == 'sortant' %}
+                        <div><dt>Destinataire{{ courrier.destinataires|length > 1 ? 's' : '' }}</dt><dd>{{ courrier.recipientLabel }}</dd></div>
+                    {% elseif courrier.direction == 'note_interne' %}
+                        <div><dt>Origine interne</dt><dd>{{ courrier.senderLabel }}</dd></div>
+                        <div><dt>Destinataire interne</dt><dd>{{ courrier.recipientLabel }}</dd></div>
+                    {% endif %}
+                    <div><dt>Localisation</dt><dd>{{ courrier.localisation ?: 'Non renseignée' }}</dd></div>
+                    <div><dt>Créé par</dt><dd>{{ courrier.createdBy ? courrier.createdBy.fullName : 'Non renseigné' }}</dd></div>
+                    {% if courrier.replyTo %}
+                        <div>
+                            <dt>Réponse au courrier</dt>
+                            <dd><a href="{{ path('app_courrier_show', {id: courrier.replyTo.id}) }}">{{ courrier.replyTo.reference }} - {{ courrier.replyTo.subject }}</a></dd>
+                        </div>
+                    {% endif %}
+                    {% if courrier.replies|length > 0 %}
+                        <div>
+                            <dt>Réponses associées</dt>
+                            <dd>
+                                {% for reply in courrier.replies %}
+                                    <a href="{{ path('app_courrier_show', {id: reply.id}) }}">{{ reply.reference }} - {{ reply.subject }}</a>{{ not loop.last ? ', ' : '' }}
+                                {% endfor %}
+                            </dd>
+                        </div>
+                    {% endif %}
+                </dl>
+            </article>
 
-            <details class="history-panel">
-                <summary>
-                    <span>Historique</span>
-                    <span class="badge">{{ courrier.actionLogs|length }} action{{ courrier.actionLogs|length > 1 ? 's' : '' }}</span>
-                </summary>
-                <div class="history-list">
-                    {% for action in courrier.actionLogs %}
-                        <article class="history-item {{ action.actionType }}">
-                            <div class="history-item__head">
-                                <strong>{{ action.typeLabel }}</strong>
-                                <time datetime="{{ action.createdAt|date('c') }}">{{ action.createdAt|date('d/m/Y H:i') }}</time>
+            <article class="record-panel" data-loading-skeleton>
+                <div class="record-panel__header">
+                    <div>
+                        <h2>Notes et pièce jointe</h2>
+                        <p>Contenu saisi et document numérisé.</p>
+                    </div>
+                    {% if courrier.attachmentFilename %}
+                        <span class="badge">Pièce jointe</span>
+                    {% endif %}
+                </div>
+
+                {% if courrier.content %}
+                    <div class="record-note">{{ courrier.content|nl2br }}</div>
+                {% else %}
+                    <div class="empty-state empty-state--compact">
+                        <span class="empty-state__icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <path d="M14 2v6h6"/>
+                                <path d="M8 13h8"/>
+                            </svg>
+                        </span>
+                        <h3>Aucun contenu détaillé</h3>
+                        <p>Le courrier ne contient pas encore de note ou de résumé.</p>
+                    </div>
+                {% endif %}
+
+                {% if courrier.attachmentFilename %}
+                    <div class="document-file">
+                        <span class="document-file__icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <path d="M14 2v6h6"/>
+                                <path d="M9 15h6"/>
+                                <path d="M9 18h4"/>
+                            </svg>
+                        </span>
+                        <div class="document-file__body">
+                            <span class="attachment-name">{{ courrier.attachmentFilename|split('/')|last }}</span>
+                            <div class="actions attachment-actions">
+                                <a class="button secondary" href="{{ attachmentUrl }}" target="_blank">Ouvrir</a>
+                                <a class="button secondary" href="{{ attachmentDownloadUrl }}" download>Télécharger</a>
                             </div>
-                            <p>{{ action.summary }}</p>
-                            <p>Par {{ action.actor ? action.actor.fullName : 'Utilisateur supprime' }}</p>
-                            {% if action.details %}
-                                <pre>{{ action.details }}</pre>
+                        </div>
+                    </div>
+
+                    <details class="attachment-preview">
+                        <summary>Prévisualisation</summary>
+                        <div class="attachment-preview__body">
+                            {% if isPreviewableImage %}
+                                <img src="{{ attachmentUrl }}" alt="Prévisualisation de {{ courrier.reference }}">
+                            {% elseif isPreviewablePdf %}
+                                <iframe src="{{ attachmentUrl }}" title="Prévisualisation de {{ courrier.reference }}"></iframe>
+                            {% else %}
+                                <div class="attachment-preview__empty">
+                                    <strong>Aperçu indisponible</strong>
+                                    <p>Ce type de fichier peut être ouvert ou téléchargé avec les boutons ci-dessus.</p>
+                                </div>
                             {% endif %}
+                        </div>
+                    </details>
+                {% else %}
+                    <div class="empty-state empty-state--compact">
+                        <span class="empty-state__icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <path d="M17 8 12 3 7 8"/>
+                                <path d="M12 3v12"/>
+                            </svg>
+                        </span>
+                        <h3>Aucune pièce jointe</h3>
+                        <p>Ajoutez le document numérisé depuis le formulaire de modification.</p>
+                        {% if is_granted('ROLE_COURRIER_EDIT') and not courrier.deletionPending %}
+                            <div class="actions">
+                                <a class="button secondary" href="{{ path('app_courrier_edit', {id: courrier.id}) }}">Ajouter une pièce</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </article>
+        </div>
+
+        <aside class="courrier-detail__aside">
+            <section class="record-panel" data-loading-skeleton>
+                <div class="record-panel__header">
+                    <div>
+                        <h2>Suivi</h2>
+                        <p>Imputation, statut et notes de traitement.</p>
+                    </div>
+                </div>
+
+                {% if courrier.deletionPending %}
+                    <p class="muted">Ce courrier est en attente de décision administrative pour sa suppression.</p>
+                {% elseif is_granted('ROLE_COURRIER_EDIT') or is_granted('ROLE_COURRIER_VALIDATE') %}
+                    <form method="post" action="{{ path('app_courrier_assign', {id: courrier.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('assign' ~ courrier.id) }}">
+                        <div class="workflow-fields">
+                            <div>
+                                <label for="assignedTo">Imputer à</label>
+                                {% if is_granted('ROLE_COURRIER_EDIT') %}
+                                    <select id="assignedTo" name="assignedTo[]" class="sr-only-select" data-autocomplete-select="true" data-placeholder="Rechercher une personne" multiple>
+                                        {% for user in users %}
+                                            <option value="{{ user.id }}" {{ courrier.assignedTo.contains(user) ? 'selected' : '' }}>{{ user.fullName }}</option>
+                                        {% endfor %}
+                                    </select>
+                                {% else %}
+                                    <p>{{ courrier.assignedToLabel }}</p>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <label for="status">Statut</label>
+                                {% if is_granted('ROLE_COURRIER_VALIDATE') %}
+                                    <select id="status" name="status">
+                                        {% for label, value in statuses %}
+                                            <option value="{{ value }}" {{ courrier.status == value ? 'selected' : '' }}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                {% else %}
+                                    <input type="hidden" name="status" value="{{ courrier.status }}">
+                                    <p><span class="badge {{ courrier.status }}">{{ courrier.statusLabel }}</span></p>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <label for="responseNotes">Suivi / réponse</label>
+                                {% if is_granted('ROLE_COURRIER_EDIT') %}
+                                    <textarea id="responseNotes" name="responseNotes" rows="6">{{ courrier.responseNotes }}</textarea>
+                                {% else %}
+                                    <p>{{ courrier.responseNotes ?: 'Non renseigné' }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="workflow-actions">
+                            <button type="submit">Mettre à jour le suivi</button>
+                        </div>
+                    </form>
+                {% else %}
+                    <p class="muted">Vous pouvez consulter le workflow, mais vous n'avez pas la permission de le modifier.</p>
+                    <dl class="detail-list">
+                        <div><dt>Imputation</dt><dd>{{ courrier.assignedToLabel }}</dd></div>
+                        <div><dt>Suivi / réponse</dt><dd>{{ courrier.responseNotes ?: 'Non renseigné' }}</dd></div>
+                    </dl>
+                {% endif %}
+
+                {% if courrier.deletionPending and is_granted('ROLE_ADMIN') %}
+                    <div class="admin-decision">
+                        <div>
+                            <strong>Décision administrateur</strong>
+                            <p>
+                                Demande faite par {{ courrier.deletionRequestedBy ? courrier.deletionRequestedBy.fullName : 'Utilisateur inconnu' }}
+                                le {{ courrier.deletionRequestedAt ? courrier.deletionRequestedAt|date('d/m/Y H:i') : 'date inconnue' }}.
+                            </p>
+                        </div>
+                        <div class="actions">
+                            <form method="post" action="{{ path('app_courrier_delete_approve', {id: courrier.id}) }}" onsubmit="return confirm('Approuver la suppression définitive de ce courrier ?');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('approve-delete' ~ courrier.id) }}">
+                                <button class="danger" type="submit">Approuver la suppression</button>
+                            </form>
+                            <form method="post" action="{{ path('app_courrier_delete_reject', {id: courrier.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('reject-delete' ~ courrier.id) }}">
+                                <button class="secondary" type="submit">Refuser</button>
+                            </form>
+                        </div>
+                    </div>
+                {% elseif is_granted('ROLE_COURRIER_DELETE') %}
+                    <form method="post" action="{{ path('app_courrier_delete', {id: courrier.id}) }}" onsubmit="return confirm('Supprimer ce courrier ?');">
+                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ courrier.id) }}">
+                        <button class="danger" type="submit">Demander la suppression</button>
+                    </form>
+                {% endif %}
+            </section>
+
+            <section class="record-panel" data-loading-skeleton>
+                <div class="record-panel__header">
+                    <div>
+                        <h2>Timeline</h2>
+                        <p>{{ courrier.actionLogs|length }} action{{ courrier.actionLogs|length > 1 ? 's' : '' }} enregistrée{{ courrier.actionLogs|length > 1 ? 's' : '' }}.</p>
+                    </div>
+                </div>
+                <div class="timeline-list">
+                    {% for action in courrier.actionLogs|slice(0, 5) %}
+                        <article class="timeline-item">
+                            <span class="timeline-marker" aria-hidden="true"></span>
+                            <div class="timeline-body">
+                                <div class="timeline-body__head">
+                                    <strong>{{ action.typeLabel }}</strong>
+                                    <time datetime="{{ action.createdAt|date('c') }}">{{ action.createdAt|date('d/m/Y H:i') }}</time>
+                                </div>
+                                <p>{{ action.summary }}</p>
+                                <p>Par {{ action.actor ? action.actor.fullName : 'Utilisateur supprimé' }}</p>
+                                {% if action.details %}
+                                    <pre>{{ action.details }}</pre>
+                                {% endif %}
+                            </div>
                         </article>
                     {% else %}
-                        <p class="muted">Aucune action enregistree pour ce courrier.</p>
+                        <div class="empty-state empty-state--compact">
+                            <span class="empty-state__icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 8v4l3 2"/>
+                                    <circle cx="12" cy="12" r="9"/>
+                                </svg>
+                            </span>
+                            <h3>Aucune action enregistrée</h3>
+                            <p>Les modifications, imputations et changements de statut apparaîtront ici.</p>
+                        </div>
                     {% endfor %}
+                    {% if courrier.actionLogs|length > 5 %}
+                        <p class="muted">Les 5 dernières actions sont affichées.</p>
+                    {% endif %}
                 </div>
-            </details>
+            </section>
         </aside>
     </section>
 {% endblock %}

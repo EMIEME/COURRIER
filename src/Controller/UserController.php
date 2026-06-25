@@ -39,7 +39,7 @@ class UserController extends AbstractController
             $entityManager->persist($user);
             $entityManager->flush();
 
-            $this->addFlash('success', 'Utilisateur cree.');
+            $this->addFlash('success', 'Utilisateur créé.');
 
             return $this->redirectToRoute('app_user_index');
         }
@@ -47,7 +47,7 @@ class UserController extends AbstractController
         return $this->render('user/form.html.twig', [
             'form' => $form,
             'title' => 'Nouvel utilisateur',
-            'button_label' => 'Creer',
+            'button_label' => 'Créer',
         ]);
     }
 
@@ -63,7 +63,7 @@ class UserController extends AbstractController
             }
 
             $entityManager->flush();
-            $this->addFlash('success', 'Utilisateur mis a jour.');
+            $this->addFlash('success', 'Utilisateur mis à jour.');
 
             return $this->redirectToRoute('app_user_index');
         }
@@ -71,7 +71,7 @@ class UserController extends AbstractController
         return $this->render('user/form.html.twig', [
             'form' => $form,
             'title' => 'Modifier un utilisateur',
-            'button_label' => 'Mettre a jour',
+            'button_label' => 'Mettre à jour',
         ]);
     }
 
@@ -87,7 +87,7 @@ class UserController extends AbstractController
         if ($this->isCsrfTokenValid('delete-user'.$user->getId(), (string) $request->request->get('_token'))) {
             $entityManager->remove($user);
             $entityManager->flush();
-            $this->addFlash('success', 'Utilisateur supprime.');
+            $this->addFlash('success', 'Utilisateur supprimé.');
         }
 
         return $this->redirectToRoute('app_user_index');

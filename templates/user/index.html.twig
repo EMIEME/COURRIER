@@ -3,7 +3,13 @@
 {% block title %}Utilisateurs{% endblock %}
 
 {% block body %}
-    <div class="topbar">
+    <nav class="breadcrumbs" aria-label="Fil d'Ariane">
+        <a href="{{ path('app_dashboard') }}">Tableau de bord</a>
+        <span class="breadcrumbs__separator" aria-hidden="true">/</span>
+        <span aria-current="page">Utilisateurs</span>
+    </nav>
+
+    <div class="topbar page-band">
         <div>
             <h1>Utilisateurs</h1>
             <p>Gestion des comptes et des permissions applicatives.</p>
@@ -13,7 +19,7 @@
         </div>
     </div>
 
-    <div class="table-wrap">
+    <div class="table-wrap" data-loading-skeleton>
         <table>
             <thead>
                 <tr>
@@ -21,7 +27,7 @@
                     <th>Email</th>
                     <th>Service</th>
                     <th>Permissions</th>
-                    <th>Actions</th>
+                    <th class="table-actions-heading">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -36,28 +42,46 @@
             } %}
             {% for user in users %}
                 <tr>
-                    <td><strong>{{ user.fullName }}</strong></td>
-                    <td>{{ user.email }}</td>
-                    <td>{{ user.service ?: '-' }}</td>
-                    <td>
+                    <td class="table-cell--long" data-label="Nom"><strong class="cell-truncate">{{ user.fullName }}</strong></td>
+                    <td class="table-cell--long" data-label="Email"><span class="cell-truncate">{{ user.email }}</span></td>
+                    <td class="table-cell--long" data-label="Service"><span class="cell-truncate">{{ user.service ?: '-' }}</span></td>
+                    <td data-label="Permissions">
                         {% for role in user.roles %}
                             <span class="badge">{{ roleLabels[role]|default(role) }}</span>
                         {% endfor %}
                     </td>
-                    <td>
-                        <div class="actions">
-                            <a class="button secondary" href="{{ path('app_user_edit', {id: user.id}) }}">Modifier</a>
+                    <td class="table-actions-cell" data-label="Actions">
+                        <div class="row-actions">
+                            <a class="button compact secondary" href="{{ path('app_user_edit', {id: user.id}) }}">Modifier</a>
                             {% if app.user != user %}
                                 <form method="post" action="{{ path('app_user_delete', {id: user.id}) }}" onsubmit="return confirm('Supprimer cet utilisateur ?');">
                                     <input type="hidden" name="_token" value="{{ csrf_token('delete-user' ~ user.id) }}">
-                                    <button class="danger" type="submit">Supprimer</button>
+                                    <button class="danger compact" type="submit">Supprimer</button>
                                 </form>
                             {% endif %}
                         </div>
                     </td>
                 </tr>
             {% else %}
-                <tr><td colspan="5" class="muted">Aucun utilisateur.</td></tr>
+                <tr class="table-empty-row">
+                    <td colspan="5">
+                        <div class="empty-state empty-state--table">
+                            <span class="empty-state__icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="8.5" cy="7" r="4"/>
+                                    <path d="M20 8v6"/>
+                                    <path d="M23 11h-6"/>
+                                </svg>
+                            </span>
+                            <h2>Aucun utilisateur</h2>
+                            <p>Créez un compte pour donner accès à l'application et attribuer les permissions nécessaires.</p>
+                            <div class="actions">
+                                <a class="button" href="{{ path('app_user_new') }}">Nouvel utilisateur</a>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
             {% endfor %}
             </tbody>
         </table>

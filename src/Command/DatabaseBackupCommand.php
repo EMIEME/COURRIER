@@ -9,7 +9,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
-#[AsCommand(name: 'app:database:backup', description: 'Genere une sauvegarde SQL de la base de donnees.')]
+#[AsCommand(name: 'app:database:backup', description: 'Génère une sauvegarde SQL de la base de données.')]
 class DatabaseBackupCommand extends Command
 {
     public function __construct(
@@ -23,7 +23,7 @@ class DatabaseBackupCommand extends Command
     {
         $this
             ->addOption('dir', null, InputOption::VALUE_REQUIRED, 'Dossier de destination de la sauvegarde')
-            ->addOption('filename', null, InputOption::VALUE_REQUIRED, 'Nom du fichier SQL a produire')
+            ->addOption('filename', null, InputOption::VALUE_REQUIRED, 'Nom du fichier SQL à produire')
             ->addOption('keep-days', null, InputOption::VALUE_REQUIRED, 'Nombre de jours de conservation des anciennes sauvegardes')
             ->addOption('include-routines', null, InputOption::VALUE_NONE, 'Inclure les routines MySQL/MariaDB')
             ->addOption('include-events', null, InputOption::VALUE_NONE, 'Inclure les events MySQL/MariaDB');
@@ -107,7 +107,7 @@ class DatabaseBackupCommand extends Command
                 @unlink($backupPath);
             }
 
-            $output->writeln('<error>La sauvegarde a echoue.</error>');
+            $output->writeln('<error>La sauvegarde a échoué.</error>');
             if ($errorOutput) {
                 $output->writeln(trim($errorOutput));
             }
@@ -118,10 +118,10 @@ class DatabaseBackupCommand extends Command
         @chmod($backupPath, 0600);
         $deleted = $this->deleteExpiredBackups($backupDir, (int) ($input->getOption('keep-days') ?: $this->env('DATABASE_BACKUP_RETENTION_DAYS', '30')));
 
-        $output->writeln(sprintf('<info>Sauvegarde creee : %s</info>', $backupPath));
+        $output->writeln(sprintf('<info>Sauvegarde créée : %s</info>', $backupPath));
         $output->writeln(sprintf('<info>Taille : %s</info>', $this->formatBytes((int) filesize($backupPath))));
         if ($deleted > 0) {
-            $output->writeln(sprintf('<comment>%d ancienne(s) sauvegarde(s) supprimee(s).</comment>', $deleted));
+            $output->writeln(sprintf('<comment>%d ancienne(s) sauvegarde(s) supprimée(s).</comment>', $deleted));
         }
 
         return Command::SUCCESS;

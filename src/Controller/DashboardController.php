@@ -40,7 +40,7 @@ class DashboardController extends AbstractController
             'filters' => $request->query->all(),
             'statusStats' => $courrierRepository->countByStatus($periodFilters),
             'directionStats' => $courrierRepository->countByDirection($periodFilters),
-            'urgentCourriers' => $courrierRepository->searchPaginated([...$periodFilters, 'status' => Courrier::STATUS_URGENT], 1, 6),
+            'urgentCourriers' => $courrierRepository->searchPaginated([...$periodFilters, 'status' => Courrier::STATUS_URGENT, 'prioritizeUrgent' => true], 1, 6),
             'filteredCourriers' => $filteredCourriers,
             'statusLabels' => $listProvider->statusLabels(),
             'directionLabels' => $listProvider->natureLabels(),

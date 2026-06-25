@@ -1,12 +1,18 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Parametres des listes{% endblock %}
+{% block title %}Paramètres des listes{% endblock %}
 
 {% block body %}
+    <nav class="breadcrumbs" aria-label="Fil d'Ariane">
+        <a href="{{ path('app_dashboard') }}">Tableau de bord</a>
+        <span class="breadcrumbs__separator" aria-hidden="true">/</span>
+        <span aria-current="page">Listes</span>
+    </nav>
+
     <div class="topbar page-band">
         <div>
-            <h1>Parametres des listes</h1>
-            <p>Libelles et valeurs utilisees dans les formulaires de courrier.</p>
+            <h1>Paramètres des listes</h1>
+            <p>Libellés et valeurs utilisées dans les formulaires de courrier.</p>
         </div>
     </div>
 
@@ -26,7 +32,7 @@
                     </select>
                 </div>
                 <div>
-                    <label for="label">Libelle</label>
+                    <label for="label">Libellé</label>
                     <input id="label" name="label" required>
                 </div>
                 <div>
@@ -51,20 +57,20 @@
                     <div>
                         <h2>{{ label }}</h2>
                         {% if category not in open_categories %}
-                            <p>Valeurs techniques protegees. Vous pouvez modifier le libelle, l'ordre et l'activation.</p>
+                            <p>Valeurs techniques protégées. Vous pouvez modifier le libellé, l'ordre et l'activation.</p>
                         {% endif %}
                     </div>
                 </div>
 
-                <div class="table-wrap">
+                <div class="table-wrap" data-loading-skeleton>
                     <table>
                         <thead>
                             <tr>
-                                <th>Libelle</th>
+                                <th>Libellé</th>
                                 <th>Valeur</th>
                                 <th>Ordre</th>
                                 <th>Actif</th>
-                                <th>Actions</th>
+                                <th class="table-actions-heading">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -75,7 +81,7 @@
                                             <input type="hidden" name="_token" value="{{ csrf_token('edit-list-option' ~ option.id) }}">
                                             <div class="filters">
                                                 <div>
-                                                    <label for="label-{{ option.id }}">Libelle</label>
+                                                    <label for="label-{{ option.id }}">Libellé</label>
                                                     <input id="label-{{ option.id }}" name="label" value="{{ option.label }}" required>
                                                 </div>
                                                 <div>
@@ -91,7 +97,7 @@
                                                     <input id="active-{{ option.id }}" name="active" type="checkbox" value="1" {{ option.active ? 'checked' : '' }}>
                                                 </div>
                                                 <div class="actions" style="align-self: end;">
-                                                    <button class="secondary" type="submit">Mettre a jour</button>
+                                                    <button class="secondary" type="submit">Mettre à jour</button>
                                                     {% if not option.locked %}
                                                         <button class="danger" type="submit" form="delete-option-{{ option.id }}">Supprimer</button>
                                                     {% endif %}
@@ -106,7 +112,25 @@
                                     </td>
                                 </tr>
                             {% else %}
-                                <tr><td colspan="5" class="muted">Aucune valeur parametree.</td></tr>
+                                <tr class="table-empty-row">
+                                    <td colspan="5">
+                                        <div class="empty-state empty-state--table">
+                                            <span class="empty-state__icon" aria-hidden="true">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
+                                                    <path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.05.05a2.1 2.1 0 0 1-2.97 2.97l-.05-.05a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.09 1.65V21a2.1 2.1 0 0 1-4.2 0v-.07a1.8 1.8 0 0 0-1.09-1.65 1.8 1.8 0 0 0-1.98.36l-.05.05a2.1 2.1 0 0 1-2.97-2.97l.05-.05A1.8 1.8 0 0 0 4.6 15a1.8 1.8 0 0 0-1.65-1.09H2.9a2.1 2.1 0 0 1 0-4.2h.07A1.8 1.8 0 0 0 4.6 8a1.8 1.8 0 0 0-.36-1.98l-.05-.05A2.1 2.1 0 0 1 7.16 3l.05.05A1.8 1.8 0 0 0 9.2 3.4 1.8 1.8 0 0 0 10.29 1.75V1.7a2.1 2.1 0 0 1 4.2 0v.07A1.8 1.8 0 0 0 15.58 3.4a1.8 1.8 0 0 0 1.98-.36l.05-.05a2.1 2.1 0 0 1 2.97 2.97l-.05.05A1.8 1.8 0 0 0 19.4 8a1.8 1.8 0 0 0 1.65 1.09h.05a2.1 2.1 0 0 1 0 4.2h-.07A1.8 1.8 0 0 0 19.4 15z"/>
+                                                </svg>
+                                            </span>
+                                            <h2>Aucune valeur paramétrée</h2>
+                                            <p>Ajoutez une première valeur pour alimenter cette liste dans les formulaires.</p>
+                                            {% if category in open_categories %}
+                                                <div class="actions">
+                                                    <a class="button" href="#label">Ajouter une valeur</a>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
                             {% endfor %}
                         </tbody>
                     </table>

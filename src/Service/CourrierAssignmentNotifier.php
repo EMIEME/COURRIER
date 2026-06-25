@@ -43,7 +43,7 @@ class CourrierAssignmentNotifier
                 ++$sent;
             } catch (\Throwable $exception) {
                 ++$failed;
-                $this->logger->error('Impossible d envoyer la notification d imputation du courrier.', [
+                $this->logger->error('Impossible d\'envoyer la notification d\'imputation du courrier.', [
                     'courrier_id' => $courrier->getId(),
                     'courrier_reference' => $courrier->getReference(),
                     'recipient' => $recipient->getEmail(),

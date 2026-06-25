@@ -43,7 +43,7 @@ class ListOptionController extends AbstractController
 
         $label = trim((string) $request->request->get('label'));
         if ('' === $label) {
-            $this->addFlash('error', 'Le libelle est obligatoire.');
+            $this->addFlash('error', 'Le libellé est obligatoire.');
 
             return $this->redirectToRoute('app_list_option_index');
         }
@@ -61,7 +61,7 @@ class ListOptionController extends AbstractController
         $entityManager->persist($option);
         $entityManager->flush();
 
-        $this->addFlash('success', 'Valeur ajoutee.');
+        $this->addFlash('success', 'Valeur ajoutée.');
 
         return $this->redirectToRoute('app_list_option_index');
     }
@@ -75,7 +75,7 @@ class ListOptionController extends AbstractController
 
         $label = trim((string) $request->request->get('label'));
         if ('' === $label) {
-            $this->addFlash('error', 'Le libelle est obligatoire.');
+            $this->addFlash('error', 'Le libellé est obligatoire.');
 
             return $this->redirectToRoute('app_list_option_index');
         }
@@ -92,7 +92,7 @@ class ListOptionController extends AbstractController
 
         $entityManager->flush();
 
-        $this->addFlash('success', 'Valeur mise a jour.');
+        $this->addFlash('success', 'Valeur mise à jour.');
 
         return $this->redirectToRoute('app_list_option_index');
     }
@@ -105,7 +105,7 @@ class ListOptionController extends AbstractController
         }
 
         if ($option->isLocked()) {
-            $this->addFlash('error', 'Cette valeur est protegee et ne peut pas etre supprimee.');
+            $this->addFlash('error', 'Cette valeur est protégée et ne peut pas être supprimée.');
 
             return $this->redirectToRoute('app_list_option_index');
         }
@@ -113,7 +113,7 @@ class ListOptionController extends AbstractController
         $entityManager->remove($option);
         $entityManager->flush();
 
-        $this->addFlash('success', 'Valeur supprimee.');
+        $this->addFlash('success', 'Valeur supprimée.');
 
         return $this->redirectToRoute('app_list_option_index');
     }

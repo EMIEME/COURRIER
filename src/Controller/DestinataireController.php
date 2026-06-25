@@ -59,7 +59,7 @@ class DestinataireController extends AbstractController
             $entityManager->persist($destinataire);
             $entityManager->flush();
 
-            $this->addFlash('success', 'Destinataire ajoute.');
+            $this->addFlash('success', 'Destinataire ajouté.');
 
             return $this->redirectToRoute('app_destinataire_index');
         }
@@ -80,7 +80,7 @@ class DestinataireController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $entityManager->flush();
 
-            $this->addFlash('success', 'Destinataire mis a jour.');
+            $this->addFlash('success', 'Destinataire mis à jour.');
 
             return $this->redirectToRoute('app_destinataire_index');
         }
@@ -88,7 +88,7 @@ class DestinataireController extends AbstractController
         return $this->render('destinataire/form.html.twig', [
             'form' => $form,
             'title' => 'Modifier un destinataire',
-            'button_label' => 'Mettre a jour',
+            'button_label' => 'Mettre à jour',
         ]);
     }
 
@@ -103,7 +103,7 @@ class DestinataireController extends AbstractController
             $entityManager->remove($destinataire);
             $entityManager->flush();
 
-            $this->addFlash('success', 'Destinataire supprime. Les courriers existants sont conserves.');
+            $this->addFlash('success', 'Destinataire supprimé. Les courriers existants sont conservés.');
         }
 
         return $this->redirectToRoute('app_destinataire_index');

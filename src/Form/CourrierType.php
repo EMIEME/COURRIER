@@ -44,7 +44,7 @@ class CourrierType extends AbstractType
                 'choices' => $this->listProvider->natureChoices($currentDirection),
             ])
             ->add('senderContact', EntityType::class, [
-                'label' => 'Emetteur',
+                'label' => 'Émetteur',
                 'class' => Destinataire::class,
                 'choice_label' => 'name',
                 'placeholder' => '',
@@ -102,10 +102,10 @@ class CourrierType extends AbstractType
                 'choices' => $this->listProvider->localisationChoices($currentLocalisation),
                 'placeholder' => 'Choisir une localisation',
                 'required' => false,
-                'help' => 'Boite ou lieu de rangement du courrier physique.',
+                'help' => 'Boîte ou lieu de rangement du courrier physique.',
             ])
             ->add('content', TextareaType::class, [
-                'label' => 'Contenu / mots-cles',
+                'label' => 'Contenu / mots-clés',
                 'required' => false,
                 'attr' => ['rows' => 5],
             ])

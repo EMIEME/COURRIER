@@ -3,7 +3,15 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block body %}
-    <div class="topbar">
+    <nav class="breadcrumbs" aria-label="Fil d'Ariane">
+        <a href="{{ path('app_dashboard') }}">Tableau de bord</a>
+        <span class="breadcrumbs__separator" aria-hidden="true">/</span>
+        <a href="{{ path('app_courrier_index') }}">Courriers</a>
+        <span class="breadcrumbs__separator" aria-hidden="true">/</span>
+        <span aria-current="page">{{ title }}</span>
+    </nav>
+
+    <div class="topbar page-band">
         <div>
             <h1>{{ title }}</h1>
             <p>Référence, localisation, pièce jointe, imputation et suivi de réponse.</p>
@@ -13,7 +21,7 @@
         </div>
     </div>
 
-    <div class="form-panel">
+    <div class="form-panel courrier-form-panel">
         {{ form_start(form, {attr: {'data-courrier-form': 'true', class: 'professional-form'}}) }}
             {{ form_errors(form) }}
             <section class="form-section">
@@ -40,14 +48,37 @@
                         {{ form_widget(form.direction, {attr: {'data-direction-field': 'true'}}) }}
                         {{ form_errors(form.direction) }}
                     </div>
-                    <div class="full">{{ form_row(form.status) }}</div>
+                    <div class="full">
+                        {{ form_label(form.status) }}
+                        {{ form_errors(form.status) }}
+                        {{ form_widget(form.status, {
+                            attr: {
+                                class: 'sr-only-select',
+                                'data-status-select': 'true'
+                            }
+                        }) }}
+                        <div class="status-choice-group" role="group" aria-label="Statut du courrier">
+                            {% for choice in form.status.vars.choices %}
+                                {% set isSelected = form.status.vars.value == choice.value %}
+                                <button
+                                    class="status-choice status-choice--{{ choice.value }} {{ isSelected ? 'is-selected' : '' }}"
+                                    type="button"
+                                    data-status-choice="{{ choice.value }}"
+                                    {{ form.status.vars.disabled ? 'disabled' : '' }}
+                                    aria-pressed="{{ isSelected ? 'true' : 'false' }}"
+                                >
+                                    {{ choice.label }}
+                                </button>
+                            {% endfor %}
+                        </div>
+                    </div>
                 </div>
             </section>
 
             <section class="form-section">
                 <div class="form-section__header">
                     <h2>Contacts</h2>
-                    <p>Le champ affiche l'emetteur ou les destinataires selon la nature selectionnee.</p>
+                    <p>Le champ affiche l'émetteur ou les destinataires selon la nature sélectionnée.</p>
                 </div>
                 <div class="form-grid">
                     <div data-visible-for="entrant">
@@ -57,7 +88,7 @@
                             attr: {
                                 class: 'single-emetteur-select sr-only-select',
                                 'data-autocomplete-select': 'true',
-                                'data-placeholder': 'Rechercher un emetteur'
+                                'data-placeholder': 'Rechercher un émetteur'
                             }
                         }) }}
                     </div>
@@ -90,7 +121,7 @@
             <section class="form-section">
                 <div class="form-section__header">
                     <h2>Contenu</h2>
-                    <p>Objet, mots-cles, suivi et document numerise.</p>
+                    <p>Objet, mots-clés, suivi et document numérisé.</p>
                 </div>
                 <div class="form-grid">
                     <div class="full">{{ form_row(form.subject) }}</div>
@@ -98,9 +129,29 @@
                     <div class="full">{{ form_row(form.responseNotes) }}</div>
                     <div class="full">{{ form_row(form.localisation) }}</div>
                     <div class="full">
-                        {{ form_row(form.attachment) }}
+                        {{ form_label(form.attachment) }}
+                        {{ form_errors(form.attachment) }}
+                        <div class="upload-dropzone" data-upload-dropzone>
+                            {{ form_widget(form.attachment, {
+                                attr: {
+                                    class: 'upload-dropzone__input',
+                                    'data-upload-input': 'true'
+                                }
+                            }) }}
+                            <span class="upload-dropzone__icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <path d="M17 8 12 3 7 8"/>
+                                    <path d="M12 3v12"/>
+                                </svg>
+                            </span>
+                            <span class="upload-dropzone__text">
+                                <strong>Déposer une pièce jointe</strong>
+                                <small data-upload-filename>PDF ou image, 10 Mo maximum</small>
+                            </span>
+                        </div>
                         {% if courrier.attachmentFilename %}
-                            <p>Pièce actuelle: <a href="{{ path('app_courrier_attachment', {id: courrier.id}) }}" target="_blank">{{ courrier.attachmentFilename }}</a></p>
+                            <p class="current-file">Pièce actuelle: <a href="{{ path('app_courrier_attachment', {id: courrier.id}) }}" target="_blank">{{ courrier.attachmentFilename }}</a></p>
                         {% endif %}
                     </div>
                 </div>

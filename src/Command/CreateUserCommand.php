@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-#[AsCommand(name: 'app:create-user', description: 'Cree un utilisateur applicatif.')]
+#[AsCommand(name: 'app:create-user', description: 'Crée un utilisateur applicatif.')]
 class CreateUserCommand extends Command
 {
     public function __construct(
@@ -28,7 +28,7 @@ class CreateUserCommand extends Command
             ->addArgument('email', InputArgument::REQUIRED, 'Email de connexion')
             ->addArgument('password', InputArgument::REQUIRED, 'Mot de passe')
             ->addOption('name', null, InputOption::VALUE_REQUIRED, 'Nom complet')
-            ->addOption('role', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Role a attribuer', ['ROLE_ADMIN']);
+            ->addOption('role', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Rôle à attribuer', ['ROLE_ADMIN']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -46,7 +46,7 @@ class CreateUserCommand extends Command
         $this->entityManager->persist($user);
         $this->entityManager->flush();
 
-        $output->writeln(sprintf('<info>Utilisateur %s cree.</info>', $email));
+        $output->writeln(sprintf('<info>Utilisateur %s créé.</info>', $email));
 
         return Command::SUCCESS;
     }

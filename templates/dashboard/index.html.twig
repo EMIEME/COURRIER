@@ -3,10 +3,14 @@
 {% block title %}Tableau de bord{% endblock %}
 
 {% block body %}
-    <div class="topbar">
+    <nav class="breadcrumbs" aria-label="Fil d'Ariane">
+        <span aria-current="page">Tableau de bord</span>
+    </nav>
+
+    <div class="topbar page-band">
         <div>
             <h1>Tableau de bord</h1>
-            <p>Vue d'ensemble des courriers recus, envoyes et a traiter.</p>
+            <p>Vue d'ensemble des courriers reçus, envoyés et à traiter.</p>
         </div>
         {% if is_granted('ROLE_COURRIER_EDIT') %}
             <div class="actions">
@@ -14,29 +18,6 @@
             </div>
         {% endif %}
     </div>
-
-    <form class="form-panel" method="get" action="{{ path('app_dashboard') }}" style="margin-bottom: 16px;">
-        <div class="filters">
-            <div>
-                <label for="dateFrom">Date de debut</label>
-                <input type="date" id="dateFrom" name="dateFrom" value="{{ filters.dateFrom|default('') }}">
-            </div>
-            <div>
-                <label for="dateTo">Date de fin</label>
-                <input type="date" id="dateTo" name="dateTo" value="{{ filters.dateTo|default('') }}">
-            </div>
-            <div style="align-self: end;" class="actions">
-                {% if filters.status|default('') %}
-                    <input type="hidden" name="status" value="{{ filters.status }}">
-                {% endif %}
-                {% if filters.direction|default('') %}
-                    <input type="hidden" name="direction" value="{{ filters.direction }}">
-                {% endif %}
-                <button type="submit">Filtrer</button>
-                <a class="button secondary" href="{{ path('app_dashboard') }}">Reinitialiser</a>
-            </div>
-        </div>
-    </form>
 
     {% set periodParams = {
         dateFrom: filters.dateFrom|default(''),
@@ -48,36 +29,159 @@
         status: filters.status|default(''),
         direction: filters.direction|default('')
     } %}
+    {% set hasDashboardAdvancedFilters = filters.status|default('') or filters.direction|default('') %}
+    {% set hasDashboardFilters = filters.dateFrom|default('') or filters.dateTo|default('') or hasDashboardAdvancedFilters %}
+
+    <form class="form-panel filter-panel" method="get" action="{{ path('app_dashboard') }}">
+        <div class="filter-primary filter-primary--period">
+            <div>
+                <label for="dateFrom">Date de début</label>
+                <input type="date" id="dateFrom" name="dateFrom" value="{{ filters.dateFrom|default('') }}">
+            </div>
+            <div>
+                <label for="dateTo">Date de fin</label>
+                <input type="date" id="dateTo" name="dateTo" value="{{ filters.dateTo|default('') }}">
+            </div>
+            <div class="filter-actions">
+                <button type="submit">Filtrer</button>
+                <a class="button secondary" href="{{ path('app_dashboard') }}">Réinitialiser</a>
+            </div>
+        </div>
+
+        <details class="filter-advanced" {{ hasDashboardAdvancedFilters ? 'open' : '' }}>
+            <summary>Filtres avancés</summary>
+            <div class="filter-advanced__grid">
+                <div>
+                    <label for="dashboardStatus">Statut</label>
+                    <select id="dashboardStatus" name="status">
+                        <option value="">Tous</option>
+                        {% for value, label in statusLabels %}
+                            <option value="{{ value }}" {{ filters.status|default('') == value ? 'selected' : '' }}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="dashboardDirection">Nature</label>
+                    <select id="dashboardDirection" name="direction">
+                        <option value="">Toutes</option>
+                        {% for value, label in directionLabels %}
+                            <option value="{{ value }}" {{ filters.direction|default('') == value ? 'selected' : '' }}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </details>
+
+        {% if hasDashboardFilters %}
+            <div class="filter-chips" aria-label="Filtres actifs">
+                {% if filters.status|default('') %}
+                    <span class="filter-chip">
+                        {{ statusLabels[filters.status]|default(filters.status) }}
+                        <a class="filter-chip__remove" href="{{ path('app_dashboard', paginationParams|merge({status: ''})) }}" aria-label="Retirer le filtre statut">×</a>
+                    </span>
+                {% endif %}
+                {% if filters.direction|default('') %}
+                    <span class="filter-chip">
+                        {{ directionLabels[filters.direction]|default(filters.direction) }}
+                        <a class="filter-chip__remove" href="{{ path('app_dashboard', paginationParams|merge({direction: ''})) }}" aria-label="Retirer le filtre nature">×</a>
+                    </span>
+                {% endif %}
+                {% if filters.dateFrom|default('') or filters.dateTo|default('') %}
+                    <span class="filter-chip">
+                        {% if filters.dateFrom|default('') and filters.dateTo|default('') %}
+                            Du {{ filters.dateFrom|date('d/m/Y') }} au {{ filters.dateTo|date('d/m/Y') }}
+                        {% elseif filters.dateFrom|default('') %}
+                            Depuis le {{ filters.dateFrom|date('d/m/Y') }}
+                        {% else %}
+                            Jusqu'au {{ filters.dateTo|date('d/m/Y') }}
+                        {% endif %}
+                        <a class="filter-chip__remove" href="{{ path('app_dashboard', paginationParams|merge({dateFrom: '', dateTo: ''})) }}" aria-label="Retirer le filtre période">×</a>
+                    </span>
+                {% endif %}
+            </div>
+        {% endif %}
+    </form>
 
     <section class="grid stats">
-        <a class="card stat stat--received {{ filters.direction|default('') == 'entrant' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({direction: 'entrant'})) }}">
-            <span>{{ directionLabels.entrant|default('Arrivé') }}</span>
+        <a class="card stat stat--received {{ filters.direction|default('') == 'entrant' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({direction: 'entrant'})) }}" data-loading-skeleton>
+            <span class="stat__head">
+                <span class="stat__label">{{ directionLabels.entrant|default('Arrivé') }}</span>
+                <span class="stat__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 12h-6l-2 3h-4l-2-3H2"/>
+                        <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+                    </svg>
+                </span>
+            </span>
             <strong>{{ directionStats.entrant }}</strong>
         </a>
-        <a class="card stat stat--sent {{ filters.direction|default('') == 'sortant' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({direction: 'sortant'})) }}">
-            <span>{{ directionLabels.sortant|default('Départ') }}</span>
+        <a class="card stat stat--sent {{ filters.direction|default('') == 'sortant' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({direction: 'sortant'})) }}" data-loading-skeleton>
+            <span class="stat__head">
+                <span class="stat__label">{{ directionLabels.sortant|default('Départ') }}</span>
+                <span class="stat__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m22 2-7 20-4-9-9-4Z"/>
+                        <path d="M22 2 11 13"/>
+                    </svg>
+                </span>
+            </span>
             <strong>{{ directionStats.sortant }}</strong>
         </a>
-        <a class="card stat stat--internal {{ filters.direction|default('') == 'note_interne' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({direction: 'note_interne'})) }}">
-            <span>{{ directionLabels.note_interne|default('Notes internes') }}</span>
+        <a class="card stat stat--internal {{ filters.direction|default('') == 'note_interne' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({direction: 'note_interne'})) }}" data-loading-skeleton>
+            <span class="stat__head">
+                <span class="stat__label">{{ directionLabels.note_interne|default('Notes internes') }}</span>
+                <span class="stat__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <path d="M14 2v6h6"/>
+                        <path d="M8 13h8"/>
+                        <path d="M8 17h5"/>
+                    </svg>
+                </span>
+            </span>
             <strong>{{ directionStats.note_interne }}</strong>
         </a>
-        <a class="card stat stat--progress {{ filters.status|default('') == 'en_cours' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({status: 'en_cours'})) }}">
-            <span>{{ statusLabels.en_cours|default('En cours') }}</span>
+        <a class="card stat stat--progress {{ filters.status|default('') == 'en_cours' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({status: 'en_cours'})) }}" data-loading-skeleton>
+            <span class="stat__head">
+                <span class="stat__label">{{ statusLabels.en_cours|default('En cours') }}</span>
+                <span class="stat__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9"/>
+                        <path d="M12 7v5l3 2"/>
+                    </svg>
+                </span>
+            </span>
             <strong>{{ statusStats.en_cours }}</strong>
         </a>
-        <a class="card stat stat--done {{ filters.status|default('') == 'traite' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({status: 'traite'})) }}">
-            <span>{{ statusLabels.traite|default('Traites') }}</span>
+        <a class="card stat stat--done {{ filters.status|default('') == 'traite' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({status: 'traite'})) }}" data-loading-skeleton>
+            <span class="stat__head">
+                <span class="stat__label">{{ statusLabels.traite|default('Traités') }}</span>
+                <span class="stat__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 12l2 2 4-4"/>
+                        <circle cx="12" cy="12" r="9"/>
+                    </svg>
+                </span>
+            </span>
             <strong>{{ statusStats.traite }}</strong>
         </a>
-        <a class="card stat stat--urgent {{ filters.status|default('') == 'urgent' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({status: 'urgent'})) }}">
-            <span>{{ statusLabels.urgent|default('Urgents') }}</span>
+        <a class="card stat stat--urgent {{ filters.status|default('') == 'urgent' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({status: 'urgent'})) }}" data-loading-skeleton>
+            <span class="stat__head">
+                <span class="stat__label">{{ statusLabels.urgent|default('Urgents') }}</span>
+                <span class="stat__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <path d="M12 9v4"/>
+                        <path d="M12 17h.01"/>
+                    </svg>
+                </span>
+            </span>
             <strong>{{ statusStats.urgent }}</strong>
         </a>
     </section>
 
     <section class="grid two">
-        <div class="table-wrap">
+        <div class="table-wrap" data-loading-skeleton>
             <table>
                 <thead>
                     <tr>
@@ -85,20 +189,45 @@
                         <th>Objet</th>
                         <th>Interlocuteur</th>
                         <th>Statut</th>
-                        <th>Impute a</th>
+                        <th>Imputé à</th>
                     </tr>
                 </thead>
                 <tbody>
                 {% for courrier in filteredCourriers %}
                     <tr>
-                        <td>{{ courrier.mailDate|date('d/m/Y') }}</td>
-                        <td><a href="{{ path('app_courrier_show', {id: courrier.id}) }}"><strong>{{ courrier.subject }}</strong></a></td>
-                        <td>{{ courrier.interlocuteurLabel }}</td>
-                        <td><span class="badge {{ courrier.status }}">{{ statusLabels[courrier.status]|default(courrier.statusLabel) }}</span></td>
-                        <td>{{ courrier.assignedToLabel }}</td>
+                        <td data-label="Date">{{ courrier.mailDate|date('d/m/Y') }}</td>
+                        <td class="table-cell--long" data-label="Objet">
+                            <a href="{{ path('app_courrier_show', {id: courrier.id}) }}" title="{{ courrier.subject }}">
+                                <strong class="cell-truncate">{{ courrier.subject }}</strong>
+                            </a>
+                        </td>
+                        <td class="table-cell--long" data-label="Interlocuteur"><span class="cell-truncate">{{ courrier.interlocuteurLabel }}</span></td>
+                        <td data-label="Statut"><span class="badge {{ courrier.status }}">{{ statusLabels[courrier.status]|default(courrier.statusLabel) }}</span></td>
+                        <td class="table-cell--long" data-label="Imputé à"><span class="cell-truncate">{{ courrier.assignedToLabel }}</span></td>
                     </tr>
                 {% else %}
-                    <tr><td colspan="5" class="muted">Aucun courrier pour ce filtre.</td></tr>
+                    <tr class="table-empty-row">
+                        <td colspan="5">
+                            <div class="empty-state empty-state--table">
+                                <span class="empty-state__icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="11" cy="11" r="7"/>
+                                        <path d="m16.5 16.5 4 4"/>
+                                    </svg>
+                                </span>
+                                <h2>Aucun courrier dans cette vue</h2>
+                                <p>Aucun courrier ne correspond aux filtres du tableau de bord.</p>
+                                <div class="actions">
+                                    {% if hasDashboardFilters %}
+                                        <a class="button secondary" href="{{ path('app_dashboard') }}">Réinitialiser les filtres</a>
+                                    {% endif %}
+                                    {% if is_granted('ROLE_COURRIER_EDIT') %}
+                                        <a class="button" href="{{ path('app_courrier_new') }}">Créer un courrier</a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
                 {% endfor %}
                 </tbody>
             </table>
@@ -109,7 +238,7 @@
                 </span>
                 <div class="actions">
                     {% if pagination.page > 1 %}
-                        <a class="button secondary" href="{{ path('app_dashboard', paginationParams|merge({page: pagination.page - 1})) }}">Precedent</a>
+                        <a class="button secondary" href="{{ path('app_dashboard', paginationParams|merge({page: pagination.page - 1})) }}">Précédent</a>
                     {% endif %}
                     {% if pagination.page < pagination.totalPages %}
                         <a class="button secondary" href="{{ path('app_dashboard', paginationParams|merge({page: pagination.page + 1})) }}">Suivant</a>
@@ -118,16 +247,52 @@
             </div>
         </div>
 
-        <aside class="card">
-            <h2>Courriers urgents</h2>
-            <div class="grid">
+        <aside class="card priority-panel" data-loading-skeleton>
+            <div class="priority-panel__header">
+                <div>
+                    <h2>Courriers urgents</h2>
+                    <p>{{ urgentCourriers|length }} priorité{{ urgentCourriers|length > 1 ? 's' : '' }} à suivre</p>
+                </div>
+                <span class="badge urgent">Urgent</span>
+            </div>
+            <div class="priority-list">
                 {% for courrier in urgentCourriers|slice(0, 6) %}
-                    <a href="{{ path('app_courrier_show', {id: courrier.id}) }}">
-                        <strong>{{ courrier.subject }}</strong><br>
-                        <span class="muted">{{ courrier.interlocuteurLabel }} - {{ courrier.mailDate|date('d/m/Y') }}</span>
+                    {% set dueTimestamp = courrier.responseDueAt ? courrier.responseDueAt|date('U') : null %}
+                    {% set todayTimestamp = 'today'|date('U') %}
+                    <a class="priority-item" href="{{ path('app_courrier_show', {id: courrier.id}) }}">
+                        <span class="priority-item__top">
+                            <strong>{{ courrier.subject }}</strong>
+                            <span class="badge urgent">{{ statusLabels[courrier.status]|default(courrier.statusLabel) }}</span>
+                        </span>
+                        <span class="priority-item__meta">
+                            <span>{{ courrier.interlocuteurLabel }}</span>
+                            <span>Courrier du {{ courrier.mailDate|date('d/m/Y') }}</span>
+                        </span>
+                        <span class="priority-item__due {{ dueTimestamp and dueTimestamp < todayTimestamp ? 'is-overdue' : (dueTimestamp == todayTimestamp ? 'is-today' : '') }}">
+                            {% if courrier.responseDueAt %}
+                                {% if dueTimestamp < todayTimestamp %}
+                                    Échéance dépassée depuis le {{ courrier.responseDueAt|date('d/m/Y') }}
+                                {% elseif dueTimestamp == todayTimestamp %}
+                                    Échéance aujourd'hui
+                                {% else %}
+                                    Échéance le {{ courrier.responseDueAt|date('d/m/Y') }}
+                                {% endif %}
+                            {% else %}
+                                Échéance non renseignée
+                            {% endif %}
+                        </span>
                     </a>
                 {% else %}
-                    <p>Aucun courrier urgent.</p>
+                    <div class="empty-state empty-state--compact">
+                        <span class="empty-state__icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 12l2 2 4-4"/>
+                                <circle cx="12" cy="12" r="9"/>
+                            </svg>
+                        </span>
+                        <h3>Aucun courrier urgent</h3>
+                        <p>Les priorités apparaîtront ici dès qu'un courrier nécessite une attention immédiate.</p>
+                    </div>
                 {% endfor %}
             </div>
         </aside>

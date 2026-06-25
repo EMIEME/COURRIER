@@ -11,7 +11,7 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: CourrierRepository::class)]
-#[UniqueEntity(fields: ['reference'], message: 'Cette reference est deja utilisee.')]
+#[UniqueEntity(fields: ['reference'], message: 'Cette référence est déjà utilisée.')]
 class Courrier
 {
     public const DIRECTION_ENTRANT = 'entrant';
@@ -30,7 +30,7 @@ class Courrier
 
     public const STATUSES = [
         'En cours' => self::STATUS_EN_COURS,
-        'Traite' => self::STATUS_TRAITE,
+        'Traité' => self::STATUS_TRAITE,
         'Urgent' => self::STATUS_URGENT,
     ];
 
@@ -276,12 +276,12 @@ class Courrier
 
     public function getRecipientLabel(): string
     {
-        return $this->recipient ?: 'Non renseigne';
+        return $this->recipient ?: 'Non renseigné';
     }
 
     public function getSenderLabel(): string
     {
-        return $this->sender ?: 'Non renseigne';
+        return $this->sender ?: 'Non renseigné';
     }
 
     public function getInterlocuteurLabel(): string
@@ -452,7 +452,7 @@ class Courrier
     public function getAssignedToLabel(): string
     {
         if ($this->assignedTo->isEmpty()) {
-            return 'Non impute';
+            return 'Non imputé';
         }
 
         return implode(', ', $this->assignedTo->map(fn (User $user) => (string) $user)->toArray());

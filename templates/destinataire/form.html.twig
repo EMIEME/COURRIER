@@ -3,7 +3,15 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block body %}
-    <div class="topbar">
+    <nav class="breadcrumbs" aria-label="Fil d'Ariane">
+        <a href="{{ path('app_dashboard') }}">Tableau de bord</a>
+        <span class="breadcrumbs__separator" aria-hidden="true">/</span>
+        <a href="{{ path('app_destinataire_index') }}">Destinataires</a>
+        <span class="breadcrumbs__separator" aria-hidden="true">/</span>
+        <span aria-current="page">{{ title }}</span>
+    </nav>
+
+    <div class="topbar page-band">
         <div>
             <h1>{{ title }}</h1>
             <p>Nom, service et email de contact.</p>

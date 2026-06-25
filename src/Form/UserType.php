@@ -50,7 +50,7 @@ class UserType extends AbstractType
                 'required' => $passwordRequired,
                 'constraints' => array_filter([
                     $passwordRequired ? new NotBlank(message: 'Le mot de passe est obligatoire.') : null,
-                    new Length(min: 8, minMessage: 'Le mot de passe doit contenir au moins {{ limit }} caracteres.'),
+                    new Length(min: 8, minMessage: 'Le mot de passe doit contenir au moins {{ limit }} caractères.'),
                 ]),
             ]);
     }

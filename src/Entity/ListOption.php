@@ -10,7 +10,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: ListOptionRepository::class)]
 #[ORM\Table(name: 'list_option')]
 #[ORM\UniqueConstraint(name: 'UNIQ_LIST_OPTION_CATEGORY_VALUE', columns: ['category', 'value'])]
-#[UniqueEntity(fields: ['category', 'value'], message: 'Cette valeur existe deja dans cette liste.')]
+#[UniqueEntity(fields: ['category', 'value'], message: 'Cette valeur existe déjà dans cette liste.')]
 class ListOption
 {
     public const CATEGORY_TYPE = 'type';

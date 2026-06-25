@@ -8,7 +8,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'app:courriers:mark-urgent', description: 'Passe en urgent les courriers en cours dont l echeance de reponse est depassee.')]
+#[AsCommand(name: 'app:courriers:mark-urgent', description: 'Passe en urgent les courriers en cours dont l\'échéance de réponse est dépassée.')]
 class MarkUrgentCourriersCommand extends Command
 {
     public function __construct(
@@ -22,12 +22,12 @@ class MarkUrgentCourriersCommand extends Command
         $updated = $this->urgencyUpdater->updateOverdueCourriers();
 
         if (0 === $updated) {
-            $output->writeln('<info>Aucun courrier a passer en urgent.</info>');
+            $output->writeln('<info>Aucun courrier à passer en urgent.</info>');
 
             return Command::SUCCESS;
         }
 
-        $output->writeln(sprintf('<info>%d courrier(s) passe(s) en urgent.</info>', $updated));
+        $output->writeln(sprintf('<info>%d courrier(s) passé(s) en urgent.</info>', $updated));
 
         return Command::SUCCESS;
     }

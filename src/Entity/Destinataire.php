@@ -10,7 +10,7 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: DestinataireRepository::class)]
-#[UniqueEntity(fields: ['name'], message: 'Ce destinataire existe deja.')]
+#[UniqueEntity(fields: ['name'], message: 'Ce destinataire existe déjà.')]
 class Destinataire
 {
     #[ORM\Id]

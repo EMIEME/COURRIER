@@ -7,10 +7,20 @@
     {% set pageDescription = pageDescription|default('Recherche multicritère par référence, date, interlocuteur, statut, imputation et contenu.') %}
     {% set listRoute = listRoute|default('app_courrier_index') %}
     {% set exportFilters = exportFilters|default(filters) %}
-    {% set emptyMessage = emptyMessage|default('Aucun resultat.') %}
+    {% set emptyMessage = emptyMessage|default('Aucun courrier ne correspond aux critères actuels.') %}
     {% set showAssignedFilter = showAssignedFilter is defined ? showAssignedFilter : true %}
     {% set showPendingDeletionActions = showPendingDeletionActions is defined ? showPendingDeletionActions : true %}
     {% set isMineView = isMineView is defined ? isMineView : false %}
+    {% set isPendingDeletionView = isPendingDeletionView is defined ? isPendingDeletionView : false %}
+    {% set selectedAssignedUser = selectedAssignedUser|default(null) %}
+
+    <nav class="breadcrumbs" aria-label="Fil d'Ariane">
+        <a href="{{ path('app_dashboard') }}">Tableau de bord</a>
+        <span class="breadcrumbs__separator" aria-hidden="true">/</span>
+        <a href="{{ path('app_courrier_index') }}">Courriers</a>
+        <span class="breadcrumbs__separator" aria-hidden="true">/</span>
+        <span aria-current="page">{{ pageTitle }}</span>
+    </nav>
 
     <div class="topbar page-band">
         <div>
@@ -18,7 +28,7 @@
             <p>{{ pageDescription }}</p>
         </div>
         <div class="actions">
-            <a class="button secondary export-button" href="{{ path('app_courrier_export', exportFilters|merge({format: 'excel'})) }}" title="Exporter la liste filtree vers Excel">
+            <a class="button secondary export-button" href="{{ path('app_courrier_export', exportFilters|merge({format: 'excel'})) }}" title="Exporter la liste filtrée vers Excel">
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                     <path d="M14 2v6h6"/>
@@ -27,7 +37,7 @@
                 </svg>
                 Excel
             </a>
-            <a class="button secondary export-button" href="{{ path('app_courrier_export', exportFilters|merge({format: 'pdf'})) }}" title="Exporter la liste filtree en PDF">
+            <a class="button secondary export-button" href="{{ path('app_courrier_export', exportFilters|merge({format: 'pdf'})) }}" title="Exporter la liste filtrée en PDF">
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                     <path d="M14 2v6h6"/>
@@ -40,7 +50,7 @@
                 <a class="button secondary" href="{{ path('app_courrier_index') }}">Tous les courriers</a>
             {% endif %}
             {% if is_granted('ROLE_COURRIER_EDIT') %}
-                <a class="button" href="{{ path('app_courrier_new') }}">Enregistrer un courrier</a>
+                <a class="button" href="{{ path('app_courrier_new') }}">Créer un courrier</a>
             {% endif %}
             {% if showPendingDeletionActions and is_granted('ROLE_ADMIN') %}
                 {% if isPendingDeletionView %}
@@ -52,61 +62,144 @@
         </div>
     </div>
 
-    <form class="form-panel" method="get" action="{{ path(listRoute) }}" style="margin-bottom: 16px;">
-        <div class="filters">
-            {% if filters.destinataire|default('') %}
-                <input type="hidden" name="destinataire" value="{{ filters.destinataire }}">
-            {% endif %}
+    {% set activeFilterParams = {
+        q: filters.q|default(''),
+        sender: filters.sender|default(''),
+        status: filters.status|default(''),
+        direction: filters.direction|default(''),
+        dateFrom: filters.dateFrom|default(''),
+        dateTo: filters.dateTo|default(''),
+        assignedTo: showAssignedFilter ? filters.assignedTo|default('') : '',
+        destinataire: filters.destinataire|default(''),
+        pendingDeletion: filters.pendingDeletion|default('')
+    } %}
+    {% set hasAdvancedFilters = filters.sender|default('') or filters.status|default('') or filters.direction|default('') or filters.dateFrom|default('') or filters.dateTo|default('') or (showAssignedFilter and filters.assignedTo|default('')) %}
+    {% set hasActiveFilters = filters.q|default('') or hasAdvancedFilters or filters.destinataire|default('') or filters.pendingDeletion|default('') %}
+
+    <form class="form-panel filter-panel" method="get" action="{{ path(listRoute) }}">
+        {% if filters.destinataire|default('') %}
+            <input type="hidden" name="destinataire" value="{{ filters.destinataire }}">
+        {% endif %}
+        {% if filters.pendingDeletion|default('') %}
+            <input type="hidden" name="pendingDeletion" value="{{ filters.pendingDeletion }}">
+        {% endif %}
+
+        <div class="filter-primary">
             <div>
-                <label for="q">Mots-cles</label>
-                <input id="q" name="q" value="{{ filters.q|default('') }}">
+                <label for="q">Mots-clés</label>
+                <input id="q" name="q" value="{{ filters.q|default('') }}" placeholder="Référence, objet, contenu...">
             </div>
-            <div>
-                <label for="sender">Interlocuteur</label>
-                <input id="sender" name="sender" value="{{ filters.sender|default('') }}">
+            <div class="filter-actions">
+                <button type="submit">Rechercher</button>
+                <a class="button secondary" href="{{ path(listRoute) }}">Réinitialiser</a>
             </div>
-            <div>
-                <label for="status">Statut</label>
-                <select id="status" name="status">
-                    <option value="">Tous</option>
-                    {% for label, value in statuses %}
-                        <option value="{{ value }}" {{ filters.status|default('') == value ? 'selected' : '' }}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label for="direction">Nature</label>
-                <select id="direction" name="direction">
-                    <option value="">Tous</option>
-                    {% for label, value in directions %}
-                        <option value="{{ value }}" {{ filters.direction|default('') == value ? 'selected' : '' }}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label for="dateFrom">Du</label>
-                <input type="date" id="dateFrom" name="dateFrom" value="{{ filters.dateFrom|default('') }}">
-            </div>
-            <div>
-                <label for="dateTo">Au</label>
-                <input type="date" id="dateTo" name="dateTo" value="{{ filters.dateTo|default('') }}">
-            </div>
-            {% if showAssignedFilter %}
+        </div>
+
+        <details class="filter-advanced" {{ hasAdvancedFilters ? 'open' : '' }}>
+            <summary>Filtres avancés</summary>
+            <div class="filter-advanced__grid">
                 <div>
-                    <label for="assignedTo">Imputer à</label>
-                    <select id="assignedTo" name="assignedTo">
+                    <label for="sender">Interlocuteur</label>
+                    <input id="sender" name="sender" value="{{ filters.sender|default('') }}">
+                </div>
+                <div>
+                    <label for="status">Statut</label>
+                    <select id="status" name="status">
                         <option value="">Tous</option>
-                        {% for user in users %}
-                            <option value="{{ user.id }}" {{ filters.assignedTo|default('') == user.id ? 'selected' : '' }}>{{ user.fullName }}</option>
+                        {% for label, value in statuses %}
+                            <option value="{{ value }}" {{ filters.status|default('') == value ? 'selected' : '' }}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </div>
-            {% endif %}
-            <div style="align-self: end;" class="actions">
-                <button type="submit">Rechercher</button>
-                <a class="button secondary" href="{{ path(listRoute) }}">Reinitialiser</a>
+                <div>
+                    <label for="direction">Nature</label>
+                    <select id="direction" name="direction">
+                        <option value="">Toutes</option>
+                        {% for label, value in directions %}
+                            <option value="{{ value }}" {{ filters.direction|default('') == value ? 'selected' : '' }}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="dateFrom">Du</label>
+                    <input type="date" id="dateFrom" name="dateFrom" value="{{ filters.dateFrom|default('') }}">
+                </div>
+                <div>
+                    <label for="dateTo">Au</label>
+                    <input type="date" id="dateTo" name="dateTo" value="{{ filters.dateTo|default('') }}">
+                </div>
+                {% if showAssignedFilter %}
+                    <div>
+                        <label for="assignedTo">Imputer à</label>
+                        <select id="assignedTo" name="assignedTo">
+                            <option value="">Tous</option>
+                            {% for user in users %}
+                                <option value="{{ user.id }}" {{ filters.assignedTo|default('') == user.id ? 'selected' : '' }}>{{ user.fullName }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                {% endif %}
             </div>
-        </div>
+        </details>
+
+        {% if hasActiveFilters %}
+            <div class="filter-chips" aria-label="Filtres actifs">
+                {% if filters.q|default('') %}
+                    <span class="filter-chip">
+                        Recherche: {{ filters.q }}
+                        <a class="filter-chip__remove" href="{{ path(listRoute, activeFilterParams|merge({q: ''})) }}" aria-label="Retirer la recherche">×</a>
+                    </span>
+                {% endif %}
+                {% if filters.sender|default('') %}
+                    <span class="filter-chip">
+                        Interlocuteur: {{ filters.sender }}
+                        <a class="filter-chip__remove" href="{{ path(listRoute, activeFilterParams|merge({sender: ''})) }}" aria-label="Retirer le filtre interlocuteur">×</a>
+                    </span>
+                {% endif %}
+                {% if filters.status|default('') %}
+                    <span class="filter-chip">
+                        {{ statusLabels[filters.status]|default(filters.status) }}
+                        <a class="filter-chip__remove" href="{{ path(listRoute, activeFilterParams|merge({status: ''})) }}" aria-label="Retirer le filtre statut">×</a>
+                    </span>
+                {% endif %}
+                {% if filters.direction|default('') %}
+                    <span class="filter-chip">
+                        {{ directionLabels[filters.direction]|default(filters.direction) }}
+                        <a class="filter-chip__remove" href="{{ path(listRoute, activeFilterParams|merge({direction: ''})) }}" aria-label="Retirer le filtre nature">×</a>
+                    </span>
+                {% endif %}
+                {% if filters.dateFrom|default('') or filters.dateTo|default('') %}
+                    <span class="filter-chip">
+                        {% if filters.dateFrom|default('') and filters.dateTo|default('') %}
+                            Du {{ filters.dateFrom|date('d/m/Y') }} au {{ filters.dateTo|date('d/m/Y') }}
+                        {% elseif filters.dateFrom|default('') %}
+                            Depuis le {{ filters.dateFrom|date('d/m/Y') }}
+                        {% else %}
+                            Jusqu'au {{ filters.dateTo|date('d/m/Y') }}
+                        {% endif %}
+                        <a class="filter-chip__remove" href="{{ path(listRoute, activeFilterParams|merge({dateFrom: '', dateTo: ''})) }}" aria-label="Retirer le filtre période">×</a>
+                    </span>
+                {% endif %}
+                {% if showAssignedFilter and selectedAssignedUser %}
+                    <span class="filter-chip">
+                        Imputé à: {{ selectedAssignedUser.fullName }}
+                        <a class="filter-chip__remove" href="{{ path(listRoute, activeFilterParams|merge({assignedTo: ''})) }}" aria-label="Retirer le filtre imputation">×</a>
+                    </span>
+                {% endif %}
+                {% if selectedDestinataire %}
+                    <span class="filter-chip">
+                        Destinataire: {{ selectedDestinataire.name }}
+                        <a class="filter-chip__remove" href="{{ path(listRoute, activeFilterParams|merge({destinataire: ''})) }}" aria-label="Retirer le filtre destinataire">×</a>
+                    </span>
+                {% endif %}
+                {% if filters.pendingDeletion|default('') %}
+                    <span class="filter-chip">
+                        Suppressions en attente
+                        <a class="filter-chip__remove" href="{{ path(listRoute, activeFilterParams|merge({pendingDeletion: ''})) }}" aria-label="Retirer le filtre suppressions en attente">×</a>
+                    </span>
+                {% endif %}
+            </div>
+        {% endif %}
     </form>
 
     {% if selectedDestinataire %}
@@ -114,9 +207,9 @@
             <div class="topbar" style="margin-bottom: 0;">
                 <div>
                     <strong>Filtre destinataire actif</strong>
-                    <p>Courriers lies a {{ selectedDestinataire.name }} comme emetteur ou destinataire.</p>
+                    <p>Courriers liés à {{ selectedDestinataire.name }} comme émetteur ou destinataire.</p>
                 </div>
-                <a class="button secondary" href="{{ path(listRoute) }}">Retirer le filtre</a>
+                <a class="button secondary" href="{{ path(listRoute, activeFilterParams|merge({destinataire: ''})) }}">Retirer le filtre</a>
             </div>
         </div>
     {% endif %}
@@ -124,7 +217,7 @@
     {% if isPendingDeletionView %}
         <div class="form-panel" style="margin-bottom: 16px;">
             <strong>Demandes de suppression en attente</strong>
-            <p>Ces courriers sont masques aux autres utilisateurs jusqu a l approbation ou au refus par un administrateur.</p>
+            <p>Ces courriers sont masqués aux autres utilisateurs jusqu'à l'approbation ou au refus par un administrateur.</p>
         </div>
     {% endif %}
 
@@ -140,7 +233,7 @@
         pendingDeletion: filters.pendingDeletion|default('')
     }) %}
 
-    <div class="table-wrap is-colorful">
+    <div class="table-wrap is-colorful" data-loading-skeleton>
         <table>
             <thead>
                 <tr>
@@ -150,24 +243,28 @@
                     <th>Objet</th>
                     <th>Interlocuteur</th>
                     <th>Statut</th>
-                    <th>Actions</th>
+                    <th class="table-actions-heading">Actions</th>
                 </tr>
             </thead>
             <tbody>
             {% for courrier in courriers %}
                 <tr>
-                    <td>{{ courrier.mailDate|date('d/m/Y') }}</td>
-                    <td>
-                        {{ courrier.reference }}
+                    <td data-label="Date">{{ courrier.mailDate|date('d/m/Y') }}</td>
+                    <td data-label="Référence">
+                        <span class="cell-truncate">{{ courrier.reference }}</span>
                         {% if courrier.deletionPending %}
                             <span class="badge pending-deletion">Suppression en attente</span>
                         {% endif %}
                     </td>
-                    <td>{{ directionLabels[courrier.direction]|default(courrier.directionLabel) }}</td>
-                    <td><a href="{{ path('app_courrier_show', {id: courrier.id}) }}"><strong>{{ courrier.subject }}</strong></a></td>
-                    <td>{{ courrier.interlocuteurLabel }}</td>
-                    <td><span class="badge {{ courrier.status }}">{{ statusLabels[courrier.status]|default(courrier.statusLabel) }}</span></td>
-                    <td>
+                    <td data-label="Nature">{{ directionLabels[courrier.direction]|default(courrier.directionLabel) }}</td>
+                    <td class="table-cell--long" data-label="Objet">
+                        <a href="{{ path('app_courrier_show', {id: courrier.id}) }}" title="{{ courrier.subject }}">
+                            <strong class="cell-truncate">{{ courrier.subject }}</strong>
+                        </a>
+                    </td>
+                    <td class="table-cell--long" data-label="Interlocuteur"><span class="cell-truncate">{{ courrier.interlocuteurLabel }}</span></td>
+                    <td data-label="Statut"><span class="badge {{ courrier.status }}">{{ statusLabels[courrier.status]|default(courrier.statusLabel) }}</span></td>
+                    <td class="table-actions-cell" data-label="Actions">
                         <div class="row-actions">
                             <a class="button compact icon-only action-view" href="{{ path('app_courrier_show', {id: courrier.id}) }}" title="Afficher" aria-label="Afficher le courrier {{ courrier.reference }}">
                                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -197,7 +294,37 @@
                     </td>
                 </tr>
             {% else %}
-                <tr><td colspan="7" class="muted">{{ emptyMessage }}</td></tr>
+                <tr class="table-empty-row">
+                    <td colspan="7">
+                        <div class="empty-state empty-state--table">
+                            <span class="empty-state__icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5z"/>
+                                    <path d="m8 9 4 3 4-3"/>
+                                    <path d="M8 15h8"/>
+                                </svg>
+                            </span>
+                            <h2>
+                                {% if isPendingDeletionView %}
+                                    Aucune suppression en attente
+                                {% elseif isMineView %}
+                                    Aucun courrier imputé
+                                {% else %}
+                                    Aucun courrier trouvé
+                                {% endif %}
+                            </h2>
+                            <p>{{ emptyMessage }}</p>
+                            <div class="actions">
+                                {% if hasActiveFilters %}
+                                    <a class="button secondary" href="{{ path(listRoute) }}">Réinitialiser les filtres</a>
+                                {% endif %}
+                                {% if is_granted('ROLE_COURRIER_EDIT') and not isPendingDeletionView %}
+                                    <a class="button" href="{{ path('app_courrier_new') }}">Créer un courrier</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                </tr>
             {% endfor %}
             </tbody>
         </table>

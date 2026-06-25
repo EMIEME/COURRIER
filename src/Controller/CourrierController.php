@@ -54,6 +54,7 @@ class CourrierController extends AbstractController
             'isPendingDeletionView' => !empty($filters['pendingDeletion']),
             'pendingDeletionCount' => $this->isGranted('ROLE_ADMIN') ? $courrierRepository->countPendingDeletion() : 0,
             'selectedDestinataire' => $filters['destinataire'] ?? null,
+            'selectedAssignedUser' => $filters['assignedTo'] instanceof User ? $filters['assignedTo'] : null,
             'statuses' => $listProvider->statusChoices(),
             'directions' => $listProvider->natureChoices(),
             'statusLabels' => $listProvider->statusLabels(),
@@ -106,6 +107,7 @@ class CourrierController extends AbstractController
             'isPendingDeletionView' => false,
             'pendingDeletionCount' => 0,
             'selectedDestinataire' => $filters['destinataire'] ?? null,
+            'selectedAssignedUser' => null,
             'statuses' => $listProvider->statusChoices(),
             'directions' => $listProvider->natureChoices(),
             'statusLabels' => $listProvider->statusLabels(),
@@ -175,7 +177,7 @@ class CourrierController extends AbstractController
             $entityManager->flush();
             $this->notifyAssignmentIfNeeded($assignmentNotifier, $courrier, $usersToNotify);
 
-            $this->addFlash('success', 'Le courrier a ete enregistre.');
+            $this->addFlash('success', 'Le courrier a été enregistré.');
 
             return $this->redirectToRoute('app_courrier_show', ['id' => $courrier->getId()]);
         }
@@ -212,7 +214,7 @@ class CourrierController extends AbstractController
 
         $attachmentPath = $this->attachmentFullPath($courrier->getAttachmentFilename());
         if (!$attachmentPath) {
-            throw $this->createNotFoundException('Piece jointe introuvable.');
+            throw $this->createNotFoundException('Pièce jointe introuvable.');
         }
 
         $disposition = $request->query->getBoolean('download')
@@ -263,7 +265,7 @@ class CourrierController extends AbstractController
             }
             $this->notifyAssignmentIfNeeded($assignmentNotifier, $courrier, $usersToNotify);
 
-            $this->addFlash('success', 'Le courrier a ete mis a jour.');
+            $this->addFlash('success', 'Le courrier a été mis à jour.');
 
             return $this->redirectToRoute('app_courrier_show', ['id' => $courrier->getId()]);
         }
@@ -272,7 +274,7 @@ class CourrierController extends AbstractController
             'courrier' => $courrier,
             'form' => $form,
             'title' => 'Modifier le courrier',
-            'button_label' => 'Mettre a jour',
+            'button_label' => 'Mettre à jour',
         ]);
     }
 
@@ -355,7 +357,7 @@ class CourrierController extends AbstractController
         $entityManager->flush();
         $this->notifyAssignmentIfNeeded($assignmentNotifier, $courrier, $usersToNotify);
 
-        $this->addFlash('success', 'Le suivi du courrier a ete mis a jour.');
+        $this->addFlash('success', 'Le suivi du courrier a été mis à jour.');
 
         return $this->redirectToRoute('app_courrier_show', ['id' => $courrier->getId()]);
     }
@@ -366,7 +368,7 @@ class CourrierController extends AbstractController
     {
         if ($this->isCsrfTokenValid('delete'.$courrier->getId(), (string) $request->request->get('_token'))) {
             if ($courrier->isDeletionPending()) {
-                $this->addFlash('success', 'Une demande de suppression est deja en attente pour ce courrier.');
+                $this->addFlash('success', 'Une demande de suppression est déjà en attente pour ce courrier.');
 
                 if ($this->isGranted('ROLE_ADMIN')) {
                     return $this->redirectToRoute('app_courrier_index', ['pendingDeletion' => 1]);
@@ -384,7 +386,7 @@ class CourrierController extends AbstractController
                 sprintf('Demandeur: %s', $this->getCurrentUser()?->getFullName() ?? 'Utilisateur inconnu')
             );
             $entityManager->flush();
-            $this->addFlash('success', 'La demande de suppression a ete transmise a l administrateur.');
+            $this->addFlash('success', 'La demande de suppression a été transmise à l\'administrateur.');
         }
 
         return $this->redirectToRoute('app_courrier_index');
@@ -399,7 +401,7 @@ class CourrierController extends AbstractController
         }
 
         if (!$courrier->isDeletionPending()) {
-            $this->addFlash('error', 'Aucune demande de suppression n est en attente pour ce courrier.');
+            $this->addFlash('error', 'Aucune demande de suppression n\'est en attente pour ce courrier.');
 
             return $this->redirectToRoute('app_courrier_show', ['id' => $courrier->getId()]);
         }
@@ -412,7 +414,7 @@ class CourrierController extends AbstractController
         if ($attachmentDeleteWarning) {
             $this->addFlash('error', $attachmentDeleteWarning);
         }
-        $this->addFlash('success', 'La suppression du courrier a ete approuvee et executee.');
+        $this->addFlash('success', 'La suppression du courrier a été approuvée et exécutée.');
 
         return $this->redirectToRoute('app_courrier_index', ['pendingDeletion' => 1]);
     }
@@ -426,7 +428,7 @@ class CourrierController extends AbstractController
         }
 
         if (!$courrier->isDeletionPending()) {
-            $this->addFlash('error', 'Aucune demande de suppression n est en attente pour ce courrier.');
+            $this->addFlash('error', 'Aucune demande de suppression n\'est en attente pour ce courrier.');
 
             return $this->redirectToRoute('app_courrier_show', ['id' => $courrier->getId()]);
         }
@@ -443,7 +445,7 @@ class CourrierController extends AbstractController
             sprintf("Demandeur: %s\nDate de demande: %s", $requestedBy, $requestedAt)
         );
         $entityManager->flush();
-        $this->addFlash('success', 'La demande de suppression a ete refusee. Le courrier est de nouveau accessible.');
+        $this->addFlash('success', 'La demande de suppression a été refusée. Le courrier est de nouveau accessible.');
 
         return $this->redirectToRoute('app_courrier_show', ['id' => $courrier->getId()]);
     }
@@ -515,7 +517,7 @@ class CourrierController extends AbstractController
 
         $attachmentIdentity = $this->extractAttachmentIdentity($oldAttachment);
         if (!$attachmentIdentity) {
-            return 'La piece jointe est restee dans son emplacement initial car son hash n a pas pu etre reconnu.';
+            return 'La pièce jointe est restée dans son emplacement initial car son hash n\'a pas pu être reconnu.';
         }
 
         $targetAttachment = $this->buildAttachmentPathWithHash($courrier, $attachmentIdentity['hash'], $attachmentIdentity['extension']);
@@ -528,11 +530,11 @@ class CourrierController extends AbstractController
         $targetPath = $uploadsDirectory.DIRECTORY_SEPARATOR.$targetAttachment;
 
         if (!is_file($oldPath)) {
-            return 'La piece jointe est restee dans son emplacement initial car le fichier source est introuvable.';
+            return 'La pièce jointe est restée dans son emplacement initial car le fichier source est introuvable.';
         }
 
         if (file_exists($targetPath)) {
-            return 'La piece jointe est restee dans son emplacement initial car un fichier existe deja dans le nouvel emplacement.';
+            return 'La pièce jointe est restée dans son emplacement initial car un fichier existe déjà dans le nouvel emplacement.';
         }
 
         $targetDirectory = dirname($targetPath);
@@ -541,7 +543,7 @@ class CourrierController extends AbstractController
         }
 
         if (!@rename($oldPath, $targetPath)) {
-            return 'La piece jointe est restee dans son emplacement initial car le deplacement du fichier a echoue.';
+            return 'La pièce jointe est restée dans son emplacement initial car le déplacement du fichier a échoué.';
         }
 
         $courrier->setAttachmentFilename($targetAttachment);
@@ -584,7 +586,7 @@ class CourrierController extends AbstractController
         }
 
         if (str_starts_with($attachmentPath, DIRECTORY_SEPARATOR) || str_contains($attachmentPath, '..')) {
-            return 'L ancienne piece jointe n a pas ete supprimee car son chemin est invalide.';
+            return 'L\'ancienne pièce jointe n\'a pas été supprimée car son chemin est invalide.';
         }
 
         $uploadsDirectory = $this->uploadsBaseDirectory();
@@ -601,7 +603,7 @@ class CourrierController extends AbstractController
         }
 
         if (!@unlink($attachmentRealPath)) {
-            return 'L ancienne piece jointe n a pas pu etre supprimee du disque.';
+            return 'L\'ancienne pièce jointe n\'a pas pu être supprimée du disque.';
         }
 
         return null;
@@ -738,7 +740,7 @@ class CourrierController extends AbstractController
         $result = $assignmentNotifier->notifyInProgressAssignment($courrier, $users);
 
         if ($result['failed'] > 0) {
-            $this->addFlash('error', sprintf('%d notification(s) email n ont pas pu etre envoyee(s). Verifiez la configuration SMTP.', $result['failed']));
+            $this->addFlash('error', sprintf('%d notification(s) email n\'ont pas pu être envoyée(s). Vérifiez la configuration SMTP.', $result['failed']));
         }
     }
 

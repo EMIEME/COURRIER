@@ -19,7 +19,7 @@ class ResetPasswordType extends AbstractType
                 'mapped' => false,
                 'constraints' => [
                     new NotBlank(message: 'Le mot de passe est requis.'),
-                    new Length(min: 8, minMessage: 'Le mot de passe doit contenir au moins {{ limit }} caracteres.'),
+                    new Length(min: 8, minMessage: 'Le mot de passe doit contenir au moins {{ limit }} caractères.'),
                 ],
             ]);
     }

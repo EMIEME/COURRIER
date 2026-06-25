@@ -58,7 +58,26 @@
                     color: #f7fbf6;
                     display: flex;
                     flex-direction: column;
+                    height: 100vh;
+                    overflow-y: auto;
                     padding: 24px 16px;
+                    position: sticky;
+                    top: 0;
+                }
+
+                .sidebar__head {
+                    align-items: center;
+                    display: flex;
+                    gap: 12px;
+                    justify-content: space-between;
+                    margin-bottom: 26px;
+                }
+
+                .sidebar__content {
+                    display: flex;
+                    flex: 1;
+                    flex-direction: column;
+                    min-height: 0;
                 }
 
                 .brand {
@@ -72,6 +91,16 @@
                     padding: 0 8px;
                 }
 
+                .sidebar__head .brand {
+                    margin-bottom: 0;
+                    min-width: 0;
+                    padding: 0;
+                }
+
+                .brand span:last-child {
+                    min-width: 0;
+                }
+
                 .brand__mark {
                     align-items: center;
                     background: #fff1df;
@@ -82,6 +111,36 @@
                     height: 34px;
                     justify-content: center;
                     width: 34px;
+                }
+
+                .mobile-nav-toggle {
+                    align-items: center;
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(255, 255, 255, 0.18);
+                    border-radius: 8px;
+                    color: #f7fbf6;
+                    cursor: pointer;
+                    display: none;
+                    flex: 0 0 auto;
+                    font-size: 14px;
+                    font-weight: 800;
+                    gap: 8px;
+                    min-height: 40px;
+                    padding: 9px 12px;
+                }
+
+                .mobile-nav-toggle:hover,
+                .mobile-nav-toggle:focus-visible {
+                    background: #fff4e8;
+                    color: var(--primary-strong);
+                    outline: none;
+                }
+
+                .mobile-nav-toggle svg {
+                    display: block;
+                    height: 18px;
+                    stroke: currentColor;
+                    width: 18px;
                 }
 
                 .notification-center {
@@ -213,7 +272,21 @@
                     padding: 12px;
                 }
 
-                .nav { display: grid; gap: 6px; }
+                .nav { display: grid; gap: 18px; }
+
+                .nav__section {
+                    display: grid;
+                    gap: 6px;
+                }
+
+                .nav__section-label {
+                    color: rgba(247, 251, 246, 0.62);
+                    font-size: 11px;
+                    font-weight: 850;
+                    letter-spacing: 0.08em;
+                    padding: 0 12px 2px;
+                    text-transform: uppercase;
+                }
 
                 .nav a {
                     align-items: center;
@@ -270,6 +343,26 @@
                 }
 
                 .main { padding: 28px; min-width: 0; }
+                .breadcrumbs {
+                    align-items: center;
+                    color: var(--muted);
+                    display: flex;
+                    flex-wrap: wrap;
+                    font-size: 13px;
+                    font-weight: 800;
+                    gap: 8px;
+                    margin: 0 0 12px;
+                }
+                .breadcrumbs a {
+                    color: var(--primary-strong);
+                }
+                .breadcrumbs span[aria-current="page"] {
+                    color: var(--text);
+                }
+                .breadcrumbs__separator {
+                    color: #9aad9d;
+                    font-weight: 700;
+                }
                 .topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 22px; }
                 .page-band {
                     background: #edf7e9;
@@ -281,6 +374,24 @@
                 }
                 .page-band h1 { color: var(--primary-strong); }
                 .page-band p { color: #52645a; }
+                .page-band__meta {
+                    align-items: center;
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                    margin-top: 10px;
+                }
+                .page-band__meta-item {
+                    background: rgba(255, 255, 255, 0.72);
+                    border: 1px solid #d6e8cf;
+                    border-radius: 999px;
+                    color: #4d604f;
+                    display: inline-flex;
+                    font-size: 12px;
+                    font-weight: 850;
+                    min-height: 28px;
+                    padding: 5px 10px;
+                }
                 h1 { margin: 0; font-size: 30px; line-height: 1.15; }
                 h2 { margin: 0 0 14px; font-size: 20px; }
                 p { margin: 0; color: var(--muted); }
@@ -339,27 +450,76 @@
                 .card { padding: 18px; }
                 .stat {
                     border-left: 5px solid var(--primary);
-                    transition: border-color 160ms ease, transform 160ms ease;
+                    color: var(--text);
+                    display: grid;
+                    gap: 14px;
+                    min-height: 118px;
+                    transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
                 }
                 .stat:hover, .stat.active { transform: translateY(-1px); }
                 .stat--received { border-left-color: var(--primary); background: #edf7e9; }
                 .stat--sent { border-left-color: var(--accent); background: #fff3e2; }
                 .stat--internal { border-left-color: #6f7f2c; background: #f4f6e6; }
-                .stat--progress { border-left-color: var(--warning); background: #fff7df; }
+                .stat--progress { border-left-color: #1d4ed8; background: #eff6ff; }
                 .stat--done { border-left-color: var(--success); background: #edf8f1; }
-                .stat--urgent { border-left-color: var(--accent-strong); background: #fff0e2; }
+                .stat--urgent { border-left-color: #b42318; background: #fff1f1; }
                 .stat.active { box-shadow: 0 0 0 2px rgba(214, 106, 0, 0.2), var(--shadow); }
-                .stat strong { display: block; font-size: 30px; line-height: 1; margin-top: 10px; }
-                .stat span { color: var(--muted); font-weight: 700; }
+                .stat__head {
+                    align-items: flex-start;
+                    display: flex;
+                    gap: 10px;
+                    justify-content: space-between;
+                }
+                .stat__label {
+                    color: var(--muted);
+                    font-weight: 750;
+                    line-height: 1.25;
+                }
+                .stat__icon {
+                    align-items: center;
+                    border-radius: 8px;
+                    display: inline-flex;
+                    flex: 0 0 34px;
+                    height: 34px;
+                    justify-content: center;
+                    width: 34px;
+                }
+                .stat__icon svg {
+                    display: block;
+                    height: 18px;
+                    stroke: currentColor;
+                    width: 18px;
+                }
+                .stat strong { color: var(--text); display: block; font-size: 32px; line-height: 1; }
+                .stat--received .stat__icon { background: rgba(11, 107, 58, 0.12); color: var(--primary-strong); }
+                .stat--sent .stat__icon { background: rgba(214, 106, 0, 0.13); color: var(--accent-strong); }
+                .stat--internal .stat__icon { background: rgba(111, 127, 44, 0.13); color: #536017; }
+                .stat--progress .stat__icon { background: rgba(37, 99, 235, 0.12); color: #1d4ed8; }
+                .stat--done .stat__icon { background: rgba(25, 114, 60, 0.12); color: var(--success); }
+                .stat--urgent .stat__icon { background: rgba(180, 35, 24, 0.12); color: #b42318; }
+                .stat--progress.active { box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.24), var(--shadow); }
+                .stat--urgent.active { box-shadow: 0 0 0 2px rgba(180, 35, 24, 0.22), var(--shadow); }
 
-                .table-wrap { overflow: auto; }
+                .table-wrap {
+                    position: relative;
+                    overflow: auto;
+                    max-width: 100%;
+                }
                 .table-wrap.is-colorful {
                     border-color: #cfe0c8;
                     box-shadow: 0 16px 36px rgba(21, 72, 39, 0.11);
                 }
                 table { border-collapse: collapse; width: 100%; min-width: 780px; }
                 th, td { border-bottom: 1px solid var(--border); padding: 13px 14px; text-align: left; vertical-align: top; }
-                th { color: var(--muted); font-size: 13px; text-transform: uppercase; }
+                th {
+                    background: #fff;
+                    color: var(--muted);
+                    font-size: 13px;
+                    position: sticky;
+                    text-transform: uppercase;
+                    top: 0;
+                    z-index: 2;
+                }
                 tr:last-child td { border-bottom: 0; }
                 .table-wrap.is-colorful thead th {
                     background: var(--primary);
@@ -369,6 +529,25 @@
                 .table-wrap.is-colorful tbody tr:nth-child(even) { background: #fbfdf9; }
                 .table-wrap.is-colorful tbody tr:hover { background: #f1f7ec; }
                 .table-wrap.is-colorful td:first-child { border-left: 4px solid #f0b464; }
+                .table-cell--long {
+                    max-width: clamp(220px, 28vw, 380px);
+                }
+                .cell-truncate {
+                    display: block;
+                    max-width: clamp(180px, 26vw, 360px);
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+                .table-actions-heading,
+                .table-actions-cell {
+                    white-space: nowrap;
+                    width: 1%;
+                }
+                .table-empty-row td {
+                    border-left: 0 !important;
+                    padding: 0;
+                }
                 .pagination {
                     align-items: center;
                     background: #fff;
@@ -383,9 +562,104 @@
                 .pagination span { color: var(--muted); font-weight: 700; }
                 .row-actions {
                     display: flex;
-                    flex-wrap: wrap;
-                    gap: 7px;
-                    min-width: 210px;
+                    flex-wrap: nowrap;
+                    gap: 6px;
+                    min-width: 0;
+                    width: max-content;
+                }
+                .row-actions form {
+                    display: inline-flex;
+                    margin: 0;
+                }
+
+                .empty-state {
+                    align-items: center;
+                    background: #fbfdf9;
+                    border: 1px dashed #bfd4b7;
+                    border-radius: 8px;
+                    display: grid;
+                    gap: 10px;
+                    justify-items: center;
+                    padding: 30px 18px;
+                    text-align: center;
+                }
+                .empty-state--table {
+                    background: linear-gradient(180deg, #fbfdf9, #fff);
+                    border: 0;
+                    border-radius: 0;
+                    padding: 38px 18px;
+                }
+                .empty-state--compact {
+                    justify-items: start;
+                    padding: 18px;
+                    text-align: left;
+                }
+                .empty-state__icon {
+                    align-items: center;
+                    background: #edf7e9;
+                    border-radius: 8px;
+                    color: var(--primary-strong);
+                    display: inline-flex;
+                    height: 44px;
+                    justify-content: center;
+                    width: 44px;
+                }
+                .empty-state__icon svg {
+                    display: block;
+                    height: 22px;
+                    stroke: currentColor;
+                    width: 22px;
+                }
+                .empty-state h2,
+                .empty-state h3 {
+                    color: var(--text);
+                    font-size: 18px;
+                    margin: 0;
+                }
+                .empty-state p {
+                    line-height: 1.55;
+                    max-width: 520px;
+                }
+                .empty-state .actions {
+                    justify-content: center;
+                    margin-top: 4px;
+                }
+                .empty-state--compact .actions {
+                    justify-content: flex-start;
+                }
+
+                [data-loading-skeleton] {
+                    position: relative;
+                }
+                body.is-page-loading {
+                    cursor: progress;
+                }
+                body.is-page-loading [data-loading-skeleton] {
+                    min-height: 118px;
+                    overflow: hidden;
+                }
+                body.is-page-loading [data-loading-skeleton] > * {
+                    opacity: 0;
+                    pointer-events: none;
+                }
+                body.is-page-loading [data-loading-skeleton]::after {
+                    animation: skeleton-shimmer 1.2s linear infinite;
+                    background: linear-gradient(90deg, #edf3e9 0%, #fbfdf9 45%, #edf3e9 90%);
+                    background-size: 220% 100%;
+                    border-radius: 8px;
+                    content: '';
+                    inset: 16px;
+                    position: absolute;
+                }
+                body.is-page-loading .table-wrap[data-loading-skeleton] {
+                    min-height: 360px;
+                }
+                body.is-page-loading .stat[data-loading-skeleton] {
+                    min-height: 118px;
+                }
+                @keyframes skeleton-shimmer {
+                    0% { background-position: 120% 0; }
+                    100% { background-position: -120% 0; }
                 }
 
                 .badge {
@@ -411,17 +685,201 @@
                     gap: 12px;
                 }
 
+                .filter-panel {
+                    display: grid;
+                    gap: 14px;
+                    margin-bottom: 16px;
+                }
+                .filter-primary {
+                    align-items: end;
+                    display: grid;
+                    gap: 12px;
+                    grid-template-columns: minmax(260px, 1fr) auto;
+                }
+                .filter-primary--period {
+                    grid-template-columns: repeat(2, minmax(180px, 1fr)) auto;
+                }
+                .filter-primary input {
+                    font-size: 16px;
+                    min-height: 48px;
+                }
+                .filter-actions {
+                    align-items: center;
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 10px;
+                }
+                .filter-advanced {
+                    border-top: 1px solid var(--border);
+                    padding-top: 12px;
+                }
+                .filter-advanced summary {
+                    align-items: center;
+                    color: var(--primary-strong);
+                    cursor: pointer;
+                    display: inline-flex;
+                    font-weight: 850;
+                    gap: 8px;
+                    list-style: none;
+                    user-select: none;
+                }
+                .filter-advanced summary::-webkit-details-marker { display: none; }
+                .filter-advanced summary::before {
+                    content: '+';
+                    font-size: 18px;
+                    line-height: 1;
+                }
+                .filter-advanced[open] summary::before {
+                    content: '-';
+                }
+                .filter-advanced__grid {
+                    display: grid;
+                    gap: 12px;
+                    grid-template-columns: repeat(4, minmax(160px, 1fr));
+                    margin-top: 12px;
+                }
+                .filter-chips {
+                    align-items: center;
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                }
+                .filter-chip {
+                    align-items: center;
+                    background: #fff8ef;
+                    border: 1px solid #f1d5ae;
+                    border-radius: 999px;
+                    color: #5f4a2e;
+                    display: inline-flex;
+                    font-size: 13px;
+                    font-weight: 800;
+                    gap: 8px;
+                    max-width: 100%;
+                    min-height: 30px;
+                    overflow-wrap: anywhere;
+                    padding: 5px 9px 5px 11px;
+                }
+                .filter-chip__remove {
+                    align-items: center;
+                    background: #f1d5ae;
+                    border-radius: 999px;
+                    color: #4d3415;
+                    display: inline-flex;
+                    flex: 0 0 auto;
+                    font-size: 14px;
+                    height: 20px;
+                    justify-content: center;
+                    line-height: 1;
+                    width: 20px;
+                }
+
+                .priority-panel {
+                    align-self: start;
+                    display: grid;
+                    gap: 14px;
+                }
+                .priority-panel__header {
+                    align-items: flex-start;
+                    border-bottom: 1px solid var(--border);
+                    display: flex;
+                    gap: 12px;
+                    justify-content: space-between;
+                    padding-bottom: 12px;
+                }
+                .priority-panel__header h2 {
+                    margin-bottom: 4px;
+                }
+                .priority-panel__header p {
+                    font-size: 13px;
+                    line-height: 1.45;
+                }
+                .priority-list {
+                    display: grid;
+                    gap: 10px;
+                }
+                .priority-item {
+                    background: #fffaf7;
+                    border: 1px solid #f2d1bd;
+                    border-left: 4px solid #b42318;
+                    border-radius: 8px;
+                    display: grid;
+                    gap: 8px;
+                    padding: 12px;
+                    transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+                }
+                .priority-item:hover {
+                    background: #fff5ef;
+                    border-color: #e9ad8a;
+                    transform: translateY(-1px);
+                }
+                .priority-item__top {
+                    align-items: flex-start;
+                    display: flex;
+                    gap: 10px;
+                    justify-content: space-between;
+                }
+                .priority-item__top strong {
+                    color: var(--text);
+                    line-height: 1.3;
+                    min-width: 0;
+                    overflow-wrap: anywhere;
+                }
+                .priority-item__meta {
+                    color: var(--muted);
+                    display: grid;
+                    gap: 3px;
+                    font-size: 13px;
+                    line-height: 1.4;
+                }
+                .priority-item__due {
+                    align-items: center;
+                    background: #f7faf4;
+                    border: 1px solid #dce9d6;
+                    border-radius: 8px;
+                    color: #4d604f;
+                    display: inline-flex;
+                    font-size: 12px;
+                    font-weight: 850;
+                    justify-self: start;
+                    min-height: 28px;
+                    padding: 5px 9px;
+                }
+                .priority-item__due.is-overdue {
+                    background: #fde8e8;
+                    border-color: #f3b8b8;
+                    color: #9d1f1f;
+                }
+                .priority-item__due.is-today {
+                    background: #fff2cf;
+                    border-color: #f0c36d;
+                    color: var(--warning);
+                }
+                .priority-empty {
+                    background: #f7faf4;
+                    border: 1px dashed #cfe0c8;
+                    border-radius: 8px;
+                    padding: 14px;
+                }
+                .priority-empty strong {
+                    color: var(--text);
+                    display: block;
+                    margin-bottom: 4px;
+                }
+
                 .form-panel { padding: 18px; }
+                .courrier-form-panel {
+                    max-width: 1180px;
+                }
                 .professional-form {
                     display: grid;
-                    gap: 18px;
+                    gap: 22px;
                 }
 
                 .form-section {
                     border: 1px solid var(--border);
                     border-radius: 8px;
                     background: #fbfdf9;
-                    padding: 16px;
+                    padding: 18px;
                 }
 
                 .form-section__header {
@@ -432,6 +890,7 @@
 
                 .form-section__header h2 { margin: 0; }
                 .form-section__header p { margin-top: 4px; }
+                .courrier-form-panel .form-grid { gap: 16px; }
                 .is-hidden { display: none !important; }
                 label { color: #293a46; display: block; font-weight: 750; margin-bottom: 7px; }
                 input, select, textarea {
@@ -451,6 +910,114 @@
                     min-height: 0;
                     width: auto;
                 }
+                .status-choice-group {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                }
+                .status-choice {
+                    background: var(--panel-soft);
+                    border: 1px solid var(--border);
+                    border-radius: 999px;
+                    color: #2a3d30;
+                    min-height: 34px;
+                    padding: 7px 12px;
+                }
+                .status-choice:hover {
+                    background: #e2eddd;
+                    color: var(--text);
+                }
+                .status-choice.is-selected {
+                    box-shadow: 0 0 0 3px rgba(11, 107, 58, 0.12);
+                }
+                .status-choice--en_cours {
+                    background: #fff2cf;
+                    border-color: #f0c36d;
+                    color: var(--warning);
+                }
+                .status-choice--traite {
+                    background: #dff3e8;
+                    border-color: #aad9be;
+                    color: var(--success);
+                }
+                .status-choice--urgent {
+                    background: #ffe7d0;
+                    border-color: #f3b179;
+                    color: #9a3900;
+                }
+                .status-choice--en_cours.is-selected {
+                    box-shadow: 0 0 0 3px rgba(198, 107, 0, 0.16);
+                }
+                .status-choice--traite.is-selected {
+                    box-shadow: 0 0 0 3px rgba(25, 114, 60, 0.16);
+                }
+                .status-choice--urgent.is-selected {
+                    box-shadow: 0 0 0 3px rgba(214, 106, 0, 0.18);
+                }
+                .status-choice:disabled {
+                    cursor: not-allowed;
+                    opacity: 0.68;
+                }
+                .upload-dropzone {
+                    align-items: center;
+                    background: #fff;
+                    border: 1px dashed #9ecb8c;
+                    border-radius: 8px;
+                    display: flex;
+                    gap: 14px;
+                    min-height: 104px;
+                    overflow: hidden;
+                    padding: 18px;
+                    position: relative;
+                    transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+                }
+                .upload-dropzone:hover,
+                .upload-dropzone.is-dragover,
+                .upload-dropzone:focus-within {
+                    background: #f7fbf4;
+                    border-color: var(--primary);
+                    box-shadow: 0 0 0 3px rgba(11, 107, 58, 0.1);
+                }
+                .upload-dropzone__input {
+                    cursor: pointer;
+                    height: 100%;
+                    inset: 0;
+                    opacity: 0;
+                    position: absolute;
+                    width: 100%;
+                }
+                .upload-dropzone__icon {
+                    align-items: center;
+                    background: #edf7e9;
+                    border-radius: 8px;
+                    color: var(--primary-strong);
+                    display: inline-flex;
+                    flex: 0 0 44px;
+                    height: 44px;
+                    justify-content: center;
+                    width: 44px;
+                }
+                .upload-dropzone__icon svg {
+                    height: 22px;
+                    stroke: currentColor;
+                    width: 22px;
+                }
+                .upload-dropzone__text {
+                    display: grid;
+                    gap: 4px;
+                    min-width: 0;
+                }
+                .upload-dropzone__text strong {
+                    color: var(--text);
+                    font-size: 15px;
+                }
+                .upload-dropzone__text small,
+                .current-file {
+                    color: var(--muted);
+                    font-size: 13px;
+                    overflow-wrap: anywhere;
+                }
+                .current-file { margin-top: 9px; }
                 .user-form-panel {
                     max-width: 980px;
                 }
@@ -620,6 +1187,207 @@
                 .detail-list div { border-bottom: 1px solid var(--border); padding-bottom: 12px; }
                 .detail-list dt { color: var(--muted); font-weight: 800; margin-bottom: 4px; }
                 .detail-list dd { margin: 0; }
+
+                .courrier-detail {
+                    align-items: start;
+                    display: grid;
+                    gap: 18px;
+                    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+                }
+                .courrier-detail__main,
+                .courrier-detail__aside {
+                    display: grid;
+                    gap: 18px;
+                    min-width: 0;
+                }
+                .courrier-detail__aside {
+                    position: sticky;
+                    top: 24px;
+                }
+                .record-panel {
+                    background: var(--panel);
+                    border: 1px solid var(--border);
+                    border-radius: 8px;
+                    box-shadow: var(--shadow);
+                    display: grid;
+                    gap: 16px;
+                    padding: 18px;
+                }
+                .record-panel--compact {
+                    gap: 12px;
+                }
+                .record-panel__header {
+                    align-items: flex-start;
+                    border-bottom: 1px solid var(--border);
+                    display: flex;
+                    gap: 12px;
+                    justify-content: space-between;
+                    padding-bottom: 12px;
+                }
+                .record-panel__header h2 {
+                    color: var(--primary-strong);
+                    margin-bottom: 4px;
+                }
+                .record-due {
+                    background: #f7faf4;
+                    border: 1px solid #dce9d6;
+                    border-radius: 999px;
+                    color: #4d604f;
+                    display: inline-flex;
+                    font-size: 12px;
+                    font-weight: 850;
+                    min-height: 28px;
+                    padding: 5px 10px;
+                }
+                .record-due.is-overdue {
+                    background: #fde8e8;
+                    border-color: #f3b8b8;
+                    color: #9d1f1f;
+                }
+                .record-due.is-today {
+                    background: #fff2cf;
+                    border-color: #f0c36d;
+                    color: var(--warning);
+                }
+                .record-meta-grid {
+                    display: grid;
+                    gap: 0 18px;
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                    margin: 0;
+                }
+                .record-meta-grid--compact {
+                    grid-template-columns: repeat(2, minmax(180px, 1fr));
+                }
+                .record-meta-grid div {
+                    border-bottom: 1px solid var(--border);
+                    display: grid;
+                    gap: 4px;
+                    padding: 12px 0;
+                }
+                .record-meta-grid dt {
+                    color: var(--muted);
+                    font-size: 12px;
+                    font-weight: 850;
+                    text-transform: uppercase;
+                }
+                .record-meta-grid dd {
+                    color: var(--text);
+                    line-height: 1.5;
+                    margin: 0;
+                    overflow-wrap: anywhere;
+                }
+                .record-note {
+                    background: #fbfdf9;
+                    border-left: 4px solid var(--primary);
+                    border-radius: 8px;
+                    color: #34463a;
+                    line-height: 1.65;
+                    padding: 14px;
+                }
+                .document-file {
+                    align-items: flex-start;
+                    background: #fff8ef;
+                    border: 1px solid #f1d5ae;
+                    border-radius: 8px;
+                    display: flex;
+                    gap: 12px;
+                    padding: 14px;
+                }
+                .document-file__icon {
+                    align-items: center;
+                    background: #fff0dc;
+                    border-radius: 8px;
+                    color: #875000;
+                    display: inline-flex;
+                    flex: 0 0 42px;
+                    height: 42px;
+                    justify-content: center;
+                    width: 42px;
+                }
+                .document-file__icon svg {
+                    height: 21px;
+                    stroke: currentColor;
+                    width: 21px;
+                }
+                .document-file__body {
+                    display: grid;
+                    gap: 8px;
+                    min-width: 0;
+                }
+                .workflow-fields {
+                    display: grid;
+                    gap: 12px;
+                }
+                .workflow-actions {
+                    align-items: center;
+                    border-top: 1px solid var(--border);
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 10px;
+                    padding-top: 14px;
+                }
+                .admin-decision {
+                    background: #fff8ef;
+                    border: 1px solid #f1d5ae;
+                    border-radius: 8px;
+                    display: grid;
+                    gap: 12px;
+                    padding: 14px;
+                }
+                .timeline-list {
+                    display: grid;
+                    gap: 12px;
+                }
+                .timeline-item {
+                    display: grid;
+                    gap: 10px;
+                    grid-template-columns: 18px minmax(0, 1fr);
+                }
+                .timeline-marker {
+                    background: var(--primary);
+                    border: 3px solid #e8f3e3;
+                    border-radius: 999px;
+                    height: 14px;
+                    margin-top: 5px;
+                    width: 14px;
+                }
+                .timeline-body {
+                    border-bottom: 1px solid var(--border);
+                    display: grid;
+                    gap: 5px;
+                    padding-bottom: 12px;
+                }
+                .timeline-body__head {
+                    align-items: flex-start;
+                    display: flex;
+                    gap: 10px;
+                    justify-content: space-between;
+                }
+                .timeline-body__head strong {
+                    color: var(--text);
+                }
+                .timeline-body time {
+                    color: var(--muted);
+                    flex: 0 0 auto;
+                    font-size: 12px;
+                    font-weight: 800;
+                    white-space: nowrap;
+                }
+                .timeline-body p {
+                    font-size: 14px;
+                    line-height: 1.45;
+                }
+                .timeline-body pre {
+                    background: #fbfdf9;
+                    border: 1px solid var(--border);
+                    border-radius: 8px;
+                    color: #5c6c60;
+                    font: inherit;
+                    font-size: 13px;
+                    margin: 4px 0 0;
+                    padding: 10px;
+                    white-space: pre-wrap;
+                }
                 .attachment-name {
                     color: #33463a;
                     display: block;
@@ -642,6 +1410,30 @@
                     justify-content: space-between;
                 }
                 .attachment-preview__header h2 { margin: 0; }
+                .attachment-preview summary {
+                    align-items: center;
+                    color: var(--primary-strong);
+                    cursor: pointer;
+                    display: flex;
+                    font-weight: 850;
+                    gap: 8px;
+                    list-style: none;
+                    user-select: none;
+                }
+                .attachment-preview summary::-webkit-details-marker { display: none; }
+                .attachment-preview summary::before {
+                    content: '+';
+                    font-size: 18px;
+                    line-height: 1;
+                }
+                .attachment-preview[open] summary::before {
+                    content: '-';
+                }
+                .attachment-preview__body {
+                    display: grid;
+                    gap: 12px;
+                    margin-top: 12px;
+                }
                 .attachment-preview iframe,
                 .attachment-preview img {
                     background: #f8faf6;
@@ -876,10 +1668,72 @@
 
                 @media (max-width: 920px) {
                     .app-shell { grid-template-columns: 1fr; }
-                    .sidebar { position: static; }
+                    .sidebar {
+                        box-shadow: 0 10px 26px rgba(14, 32, 22, 0.18);
+                        height: auto;
+                        max-height: 100vh;
+                        overflow: visible;
+                        padding: 12px 14px;
+                        position: sticky;
+                        top: 0;
+                        z-index: 40;
+                    }
+                    .sidebar__head {
+                        margin-bottom: 0;
+                    }
+                    .sidebar__content {
+                        border-top: 1px solid rgba(255, 255, 255, 0.14);
+                        display: none;
+                        margin-top: 12px;
+                        max-height: calc(100vh - 68px);
+                        overflow: auto;
+                        padding-top: 12px;
+                    }
+                    .sidebar.is-open .sidebar__content {
+                        display: flex;
+                    }
+                    .brand {
+                        font-size: 18px;
+                    }
+                    .brand span:last-child {
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                    }
+                    .brand__mark {
+                        flex-basis: 32px;
+                        height: 32px;
+                        width: 32px;
+                    }
+                    .mobile-nav-toggle {
+                        display: inline-flex;
+                    }
+                    .notification-center {
+                        margin-bottom: 12px;
+                    }
+                    .notification-panel {
+                        box-shadow: none;
+                        max-height: 300px;
+                    }
+                    .nav {
+                        gap: 12px;
+                    }
+                    .nav a {
+                        min-height: 42px;
+                    }
+                    .nav a:hover,
+                    .nav a.active {
+                        transform: none;
+                    }
+                    .user-box {
+                        margin-top: 14px;
+                    }
                     .main { padding: 18px; }
                     .app-shell--guest .main { padding: 0; }
                     .grid.stats, .grid.two, .filters, .form-grid, .permission-layout { grid-template-columns: 1fr; }
+                    .courrier-detail { grid-template-columns: 1fr; }
+                    .courrier-detail__aside { position: static; }
+                    .filter-primary, .filter-primary--period, .filter-advanced__grid { grid-template-columns: 1fr; }
                     .topbar { flex-direction: column; }
                     .login-page { padding: 20px; }
                     .login-shell { grid-template-columns: 1fr; gap: 20px; }
@@ -889,12 +1743,187 @@
                     .login-card { padding: 22px; }
                     .attachment-preview iframe { min-height: 420px; }
                 }
+
+                @media (max-width: 720px) {
+                    .record-panel__header,
+                    .document-file,
+                    .timeline-body__head {
+                        flex-direction: column;
+                    }
+                    .record-meta-grid {
+                        grid-template-columns: 1fr;
+                    }
+                    .breadcrumbs {
+                        font-size: 12px;
+                    }
+                    .table-wrap {
+                        background: transparent;
+                        border: 0;
+                        box-shadow: none;
+                        overflow: visible;
+                    }
+                    .table-wrap table {
+                        border-collapse: separate;
+                        border-spacing: 0 12px;
+                        min-width: 0;
+                    }
+                    .table-wrap thead { display: none; }
+                    .table-wrap tbody,
+                    .table-wrap tr,
+                    .table-wrap td {
+                        display: block;
+                        width: 100%;
+                    }
+                    .table-wrap tbody tr {
+                        background: #fff;
+                        border: 1px solid var(--border);
+                        border-radius: 8px;
+                        box-shadow: var(--shadow);
+                        overflow: hidden;
+                    }
+                    .table-wrap td {
+                        border-bottom: 1px solid var(--border);
+                        display: grid;
+                        gap: 10px;
+                        grid-template-columns: minmax(92px, 0.36fr) minmax(0, 1fr);
+                        max-width: none;
+                        padding: 11px 12px;
+                    }
+                    .table-wrap td::before {
+                        align-self: start;
+                        color: var(--muted);
+                        content: attr(data-label);
+                        font-size: 12px;
+                        font-weight: 850;
+                        grid-column: 1;
+                        grid-row: 1 / span 12;
+                        text-transform: uppercase;
+                    }
+                    .table-wrap td > * {
+                        grid-column: 2;
+                    }
+                    .table-wrap td[colspan] {
+                        display: block;
+                    }
+                    .table-wrap td[colspan]::before {
+                        content: none;
+                    }
+                    .table-wrap td:last-child {
+                        border-bottom: 0;
+                    }
+                    .table-wrap.is-colorful tbody tr:nth-child(even),
+                    .table-wrap.is-colorful tbody tr:hover {
+                        background: #fff;
+                    }
+                    .table-wrap.is-colorful td:first-child {
+                        border-left: 0;
+                    }
+                    .table-actions-cell {
+                        white-space: normal;
+                        width: 100%;
+                    }
+                    .table-actions-cell::before {
+                        display: block;
+                        margin-bottom: 8px;
+                    }
+                    .table-actions-cell,
+                    .table-actions-cell .row-actions {
+                        display: block;
+                    }
+                    .row-actions {
+                        flex-wrap: wrap;
+                        width: 100%;
+                    }
+                    .cell-truncate {
+                        white-space: normal;
+                    }
+                    .pagination {
+                        align-items: flex-start;
+                        min-width: 0;
+                    }
+                }
             </style>
         {% endblock %}
 
         {% block javascripts %}
             <script>
                 document.addEventListener('DOMContentLoaded', () => {
+                    const mobileSidebar = document.querySelector('[data-mobile-sidebar]');
+                    const mobileNavToggle = document.querySelector('[data-mobile-nav-toggle]');
+                    const mobileNavContent = document.querySelector('[data-mobile-nav-content]');
+                    const mobileNavQuery = window.matchMedia('(max-width: 920px)');
+
+                    if (mobileSidebar && mobileNavToggle && mobileNavContent) {
+                        const setMobileNavOpen = (isOpen) => {
+                            mobileSidebar.classList.toggle('is-open', isOpen);
+                            mobileNavToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                            mobileNavToggle.setAttribute('aria-label', isOpen ? 'Fermer la navigation' : 'Ouvrir la navigation');
+                        };
+
+                        mobileNavToggle.addEventListener('click', () => {
+                            setMobileNavOpen(!mobileSidebar.classList.contains('is-open'));
+                        });
+
+                        mobileNavContent.querySelectorAll('a').forEach((link) => {
+                            link.addEventListener('click', () => {
+                                if (mobileNavQuery.matches) {
+                                    setMobileNavOpen(false);
+                                }
+                            });
+                        });
+
+                        const closeWhenDesktop = () => {
+                            if (!mobileNavQuery.matches) {
+                                setMobileNavOpen(false);
+                            }
+                        };
+
+                        if (mobileNavQuery.addEventListener) {
+                            mobileNavQuery.addEventListener('change', closeWhenDesktop);
+                        } else {
+                            mobileNavQuery.addListener(closeWhenDesktop);
+                        }
+
+                        setMobileNavOpen(false);
+                    }
+
+                    const showPageLoading = () => {
+                        document.body.classList.add('is-page-loading');
+                    };
+
+                    document.body.addEventListener('click', (event) => {
+                        const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
+                        if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                            return;
+                        }
+
+                        const href = link.getAttribute('href') || '';
+                        if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:')) {
+                            return;
+                        }
+
+                        if ((link.target && link.target !== '_self') || link.hasAttribute('download') || link.classList.contains('export-button')) {
+                            return;
+                        }
+
+                        const url = new URL(link.href, window.location.href);
+                        if (url.origin === window.location.origin) {
+                            window.setTimeout(showPageLoading, 80);
+                        }
+                    });
+
+                    document.querySelectorAll('form').forEach((form) => {
+                        form.addEventListener('submit', (event) => {
+                            if (!event.defaultPrevented && (!form.target || form.target === '_self')) {
+                                window.setTimeout(showPageLoading, 80);
+                            }
+                        });
+                    });
+
+                    window.addEventListener('pageshow', () => {
+                        document.body.classList.remove('is-page-loading');
+                    });
+
                     document.querySelectorAll('[data-autocomplete-select]').forEach((select) => {
                         if (select.dataset.autocompleteReady === 'true') {
                             return;
@@ -999,6 +2028,60 @@
                         sync();
                     });
 
+                    document.querySelectorAll('[data-status-select]').forEach((select) => {
+                        const group = select.parentElement?.querySelector('.status-choice-group');
+                        if (!group) {
+                            return;
+                        }
+
+                        const choices = Array.from(group.querySelectorAll('[data-status-choice]'));
+                        const syncStatusChoices = () => {
+                            choices.forEach((choice) => {
+                                const selected = choice.dataset.statusChoice === select.value;
+                                choice.classList.toggle('is-selected', selected);
+                                choice.setAttribute('aria-pressed', selected ? 'true' : 'false');
+                            });
+                        };
+
+                        choices.forEach((choice) => {
+                            choice.addEventListener('click', () => {
+                                if (select.disabled || choice.disabled) {
+                                    return;
+                                }
+
+                                select.value = choice.dataset.statusChoice || '';
+                                select.dispatchEvent(new Event('change', { bubbles: true }));
+                                syncStatusChoices();
+                            });
+                        });
+
+                        syncStatusChoices();
+                    });
+
+                    document.querySelectorAll('[data-upload-dropzone]').forEach((dropzone) => {
+                        const input = dropzone.querySelector('[data-upload-input]');
+                        const filename = dropzone.querySelector('[data-upload-filename]');
+                        if (!input || !filename) {
+                            return;
+                        }
+
+                        input.addEventListener('change', () => {
+                            filename.textContent = input.files && input.files.length > 0
+                                ? input.files[0].name
+                                : 'PDF ou image, 10 Mo maximum';
+                        });
+
+                        ['dragenter', 'dragover'].forEach((eventName) => {
+                            dropzone.addEventListener(eventName, () => dropzone.classList.add('is-dragover'));
+                        });
+
+                        ['dragleave', 'drop'].forEach((eventName) => {
+                            dropzone.addEventListener(eventName, () => {
+                                window.setTimeout(() => dropzone.classList.remove('is-dragover'), 80);
+                            });
+                        });
+                    });
+
                     document.querySelectorAll('[data-courrier-form]').forEach((form) => {
                         const direction = form.querySelector('[data-direction-field]');
                         const senderGroup = form.querySelector('[data-visible-for="entrant"]');
@@ -1044,136 +2127,163 @@
             {% if app.user %}
                 {% set currentRoute = app.request.attributes.get('_route') %}
                 {% set homeRoute = is_granted('ROLE_COURRIER_VIEW') ? 'app_dashboard' : 'app_account_no_access' %}
-                <aside class="sidebar">
-                    <a class="brand" href="{{ path(homeRoute) }}">
-                        <span class="brand__mark" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5z"/>
-                                <path d="m8 9 4 3 4-3"/>
-                                <path d="M8 15h8"/>
-                            </svg>
-                        </span>
-                        <span>Gestion Courrier</span>
-                    </a>
-                    {% set notificationCenter = app_notifications(app.user) %}
-                    <details class="notification-center">
-                        <summary aria-label="Notifications">
-                            <span class="notification-center__icon" aria-hidden="true">
+                <aside class="sidebar" data-mobile-sidebar>
+                    <div class="sidebar__head">
+                        <a class="brand" href="{{ path(homeRoute) }}">
+                            <span class="brand__mark" aria-hidden="true">
                                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
-                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                                    <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5z"/>
+                                    <path d="m8 9 4 3 4-3"/>
+                                    <path d="M8 15h8"/>
                                 </svg>
                             </span>
-                            <span class="notification-center__label">Notifications</span>
-                            {% if notificationCenter.count > 0 %}
-                                <span class="notification-badge">{{ notificationCenter.count > 99 ? '99+' : notificationCenter.count }}</span>
-                            {% endif %}
-                        </summary>
-                        <div class="notification-panel">
-                            <div class="notification-panel__head">
-                                <strong>Notifications</strong>
+                            <span>Gestion Courrier</span>
+                        </a>
+                        <button class="mobile-nav-toggle" type="button" data-mobile-nav-toggle aria-controls="mobileNavigation" aria-expanded="false">
+                            <span>Menu</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M4 6h16"/>
+                                <path d="M4 12h16"/>
+                                <path d="M4 18h16"/>
+                            </svg>
+                        </button>
+                    </div>
+                    {% set notificationCenter = app_notifications(app.user) %}
+                    <div class="sidebar__content" id="mobileNavigation" data-mobile-nav-content>
+                        <details class="notification-center">
+                            <summary aria-label="Notifications">
+                                <span class="notification-center__icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+                                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                                    </svg>
+                                </span>
+                                <span class="notification-center__label">Notifications</span>
                                 {% if notificationCenter.count > 0 %}
-                                    <span class="badge">{{ notificationCenter.count }}</span>
+                                    <span class="notification-badge">{{ notificationCenter.count > 99 ? '99+' : notificationCenter.count }}</span>
                                 {% endif %}
+                            </summary>
+                            <div class="notification-panel">
+                                <div class="notification-panel__head">
+                                    <strong>Notifications</strong>
+                                    {% if notificationCenter.count > 0 %}
+                                        <span class="badge">{{ notificationCenter.count }}</span>
+                                    {% endif %}
+                                </div>
+                                {% for notification in notificationCenter.items %}
+                                    <a class="notification-item notification-item--{{ notification.severity }}" href="{{ path(notification.route, notification.routeParams) }}">
+                                        <strong>{{ notification.title }}</strong>
+                                        <p>{{ notification.message }}</p>
+                                    </a>
+                                {% else %}
+                                    <p class="notification-empty">Aucune notification active.</p>
+                                {% endfor %}
                             </div>
-                            {% for notification in notificationCenter.items %}
-                                <a class="notification-item notification-item--{{ notification.severity }}" href="{{ path(notification.route, notification.routeParams) }}">
-                                    <strong>{{ notification.title }}</strong>
-                                    <p>{{ notification.message }}</p>
-                                </a>
-                            {% else %}
-                                <p class="notification-empty">Aucune notification active.</p>
-                            {% endfor %}
-                        </div>
-                    </details>
-                    <nav class="nav">
-                        {% if is_granted('ROLE_COURRIER_VIEW') %}
-                            <a class="{{ currentRoute == 'app_dashboard' ? 'active' : '' }}" href="{{ path('app_dashboard') }}">
-                                <span class="nav__icon" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <rect x="3" y="3" width="7" height="7"/>
-                                        <rect x="14" y="3" width="7" height="7"/>
-                                        <rect x="14" y="14" width="7" height="7"/>
-                                        <rect x="3" y="14" width="7" height="7"/>
-                                    </svg>
-                                </span>
-                                <span>Tableau de bord</span>
-                            </a>
-                            <a class="{{ currentRoute == 'app_courrier_mine' ? 'active' : '' }}" href="{{ path('app_courrier_mine') }}">
-                                <span class="nav__icon" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M4 4h16v16H4z"/>
-                                        <path d="M8 4v6h8V4"/>
-                                        <path d="M8 15h8"/>
-                                    </svg>
-                                </span>
-                                <span>Mes courriers</span>
-                            </a>
-                            <a class="{{ currentRoute in ['app_courrier_index', 'app_courrier_show', 'app_courrier_edit'] ? 'active' : '' }}" href="{{ path('app_courrier_index') }}">
-                                <span class="nav__icon" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <circle cx="11" cy="11" r="7"/>
-                                        <path d="m16.5 16.5 4 4"/>
-                                        <path d="M8 11h6"/>
-                                    </svg>
-                                </span>
-                                <span>Trouver un courrier</span>
-                            </a>
-                        {% endif %}
-                        {% if is_granted('ROLE_COURRIER_EDIT') %}
-                            <a class="{{ currentRoute == 'app_courrier_new' ? 'active' : '' }}" href="{{ path('app_courrier_new') }}">
-                                <span class="nav__icon" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M14 3v5a2 2 0 0 0 2 2h5"/>
-                                        <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l7 7v9a2 2 0 0 1-2 2z"/>
-                                        <path d="M12 12v6"/>
-                                        <path d="M9 15h6"/>
-                                    </svg>
-                                </span>
-                                <span>Enregistrer nouveau</span>
-                            </a>
-                        {% endif %}
-                        {% if is_granted('ROLE_SECRETARIAT') %}
-                            <a class="{{ currentRoute starts with 'app_destinataire_' ? 'active' : '' }}" href="{{ path('app_destinataire_index') }}">
-                                <span class="nav__icon" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                                        <circle cx="9" cy="7" r="4"/>
-                                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                                    </svg>
-                                </span>
-                                <span>Destinataires</span>
-                            </a>
-                        {% endif %}
-                        {% if is_granted('ROLE_ADMIN') %}
-                            <a class="{{ currentRoute starts with 'app_list_option_' ? 'active' : '' }}" href="{{ path('app_list_option_index') }}">
-                                <span class="nav__icon" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
-                                        <path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.05.05a2.1 2.1 0 0 1-2.97 2.97l-.05-.05a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.09 1.65V21a2.1 2.1 0 0 1-4.2 0v-.07a1.8 1.8 0 0 0-1.09-1.65 1.8 1.8 0 0 0-1.98.36l-.05.05a2.1 2.1 0 0 1-2.97-2.97l.05-.05A1.8 1.8 0 0 0 4.6 15a1.8 1.8 0 0 0-1.65-1.09H2.9a2.1 2.1 0 0 1 0-4.2h.07A1.8 1.8 0 0 0 4.6 8a1.8 1.8 0 0 0-.36-1.98l-.05-.05A2.1 2.1 0 0 1 7.16 3l.05.05A1.8 1.8 0 0 0 9.2 3.4 1.8 1.8 0 0 0 10.29 1.75V1.7a2.1 2.1 0 0 1 4.2 0v.07A1.8 1.8 0 0 0 15.58 3.4a1.8 1.8 0 0 0 1.98-.36l.05-.05a2.1 2.1 0 0 1 2.97 2.97l-.05.05A1.8 1.8 0 0 0 19.4 8a1.8 1.8 0 0 0 1.65 1.09h.05a2.1 2.1 0 0 1 0 4.2h-.07A1.8 1.8 0 0 0 19.4 15z"/>
-                                    </svg>
-                                </span>
-                                <span>Paramètres</span>
-                            </a>
-                            <a class="{{ currentRoute starts with 'app_user_' ? 'active' : '' }}" href="{{ path('app_user_index') }}">
-                                <span class="nav__icon" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                                        <circle cx="8.5" cy="7" r="4"/>
-                                        <path d="M20 8v6"/>
-                                        <path d="M23 11h-6"/>
-                                    </svg>
-                                </span>
-                                <span>Utilisateurs</span>
-                            </a>
-                        {% endif %}
-                    </nav>
-                    <div class="user-box">
-                        <strong>{{ app.user.fullName }}</strong><br>
-                        <span>{{ app.user.email }}</span>
-                        <div style="margin-top: 14px;">
-                            <a class="button secondary" href="{{ path('app_logout') }}">Deconnexion</a>
+                        </details>
+                        <nav class="nav" aria-label="Navigation principale">
+                            {% if is_granted('ROLE_COURRIER_VIEW') or is_granted('ROLE_COURRIER_EDIT') %}
+                                <div class="nav__section">
+                                    <span class="nav__section-label">Courriers</span>
+                                    {% if is_granted('ROLE_COURRIER_VIEW') %}
+                                        <a class="{{ currentRoute == 'app_dashboard' ? 'active' : '' }}" href="{{ path('app_dashboard') }}">
+                                            <span class="nav__icon" aria-hidden="true">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <rect x="3" y="3" width="7" height="7"/>
+                                                    <rect x="14" y="3" width="7" height="7"/>
+                                                    <rect x="14" y="14" width="7" height="7"/>
+                                                    <rect x="3" y="14" width="7" height="7"/>
+                                                </svg>
+                                            </span>
+                                            <span>Tableau de bord</span>
+                                        </a>
+                                        <a class="{{ currentRoute == 'app_courrier_mine' ? 'active' : '' }}" href="{{ path('app_courrier_mine') }}">
+                                            <span class="nav__icon" aria-hidden="true">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M4 4h16v16H4z"/>
+                                                    <path d="M8 4v6h8V4"/>
+                                                    <path d="M8 15h8"/>
+                                                </svg>
+                                            </span>
+                                            <span>Mes courriers</span>
+                                        </a>
+                                        <a class="{{ currentRoute in ['app_courrier_index', 'app_courrier_show', 'app_courrier_edit'] ? 'active' : '' }}" href="{{ path('app_courrier_index') }}">
+                                            <span class="nav__icon" aria-hidden="true">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <circle cx="11" cy="11" r="7"/>
+                                                    <path d="m16.5 16.5 4 4"/>
+                                                    <path d="M8 11h6"/>
+                                                </svg>
+                                            </span>
+                                            <span>Rechercher</span>
+                                        </a>
+                                    {% endif %}
+                                    {% if is_granted('ROLE_COURRIER_EDIT') %}
+                                        <a class="{{ currentRoute == 'app_courrier_new' ? 'active' : '' }}" href="{{ path('app_courrier_new') }}">
+                                            <span class="nav__icon" aria-hidden="true">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M14 3v5a2 2 0 0 0 2 2h5"/>
+                                                    <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l7 7v9a2 2 0 0 1-2 2z"/>
+                                                    <path d="M12 12v6"/>
+                                                    <path d="M9 15h6"/>
+                                                </svg>
+                                            </span>
+                                            <span>Nouveau courrier</span>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            {% if is_granted('ROLE_SECRETARIAT') or is_granted('ROLE_ADMIN') %}
+                                <div class="nav__section">
+                                    <span class="nav__section-label">Référentiels</span>
+                                    {% if is_granted('ROLE_SECRETARIAT') %}
+                                        <a class="{{ currentRoute starts with 'app_destinataire_' ? 'active' : '' }}" href="{{ path('app_destinataire_index') }}">
+                                            <span class="nav__icon" aria-hidden="true">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                                    <circle cx="9" cy="7" r="4"/>
+                                                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                                </svg>
+                                            </span>
+                                            <span>Destinataires</span>
+                                        </a>
+                                    {% endif %}
+                                    {% if is_granted('ROLE_ADMIN') %}
+                                        <a class="{{ currentRoute starts with 'app_list_option_' ? 'active' : '' }}" href="{{ path('app_list_option_index') }}">
+                                            <span class="nav__icon" aria-hidden="true">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
+                                                    <path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.05.05a2.1 2.1 0 0 1-2.97 2.97l-.05-.05a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.09 1.65V21a2.1 2.1 0 0 1-4.2 0v-.07a1.8 1.8 0 0 0-1.09-1.65 1.8 1.8 0 0 0-1.98.36l-.05.05a2.1 2.1 0 0 1-2.97-2.97l.05-.05A1.8 1.8 0 0 0 4.6 15a1.8 1.8 0 0 0-1.65-1.09H2.9a2.1 2.1 0 0 1 0-4.2h.07A1.8 1.8 0 0 0 4.6 8a1.8 1.8 0 0 0-.36-1.98l-.05-.05A2.1 2.1 0 0 1 7.16 3l.05.05A1.8 1.8 0 0 0 9.2 3.4 1.8 1.8 0 0 0 10.29 1.75V1.7a2.1 2.1 0 0 1 4.2 0v.07A1.8 1.8 0 0 0 15.58 3.4a1.8 1.8 0 0 0 1.98-.36l.05-.05a2.1 2.1 0 0 1 2.97 2.97l-.05.05A1.8 1.8 0 0 0 19.4 8a1.8 1.8 0 0 0 1.65 1.09h.05a2.1 2.1 0 0 1 0 4.2h-.07A1.8 1.8 0 0 0 19.4 15z"/>
+                                                </svg>
+                                            </span>
+                                            <span>Listes</span>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            {% if is_granted('ROLE_ADMIN') %}
+                                <div class="nav__section">
+                                    <span class="nav__section-label">Administration</span>
+                                    <a class="{{ currentRoute starts with 'app_user_' ? 'active' : '' }}" href="{{ path('app_user_index') }}">
+                                        <span class="nav__icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                                <circle cx="8.5" cy="7" r="4"/>
+                                                <path d="M20 8v6"/>
+                                                <path d="M23 11h-6"/>
+                                            </svg>
+                                        </span>
+                                        <span>Utilisateurs</span>
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </nav>
+                        <div class="user-box">
+                            <strong>{{ app.user.fullName }}</strong><br>
+                            <span>{{ app.user.email }}</span>
+                            <div style="margin-top: 14px;">
+                                <a class="button secondary" href="{{ path('app_logout') }}">Déconnexion</a>
+                            </div>
                         </div>
                     </div>
                 </aside>
