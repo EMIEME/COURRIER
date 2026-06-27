@@ -269,13 +269,14 @@
                 {% endif %}
             </section>
 
-            <section class="record-panel" data-loading-skeleton>
-                <div class="record-panel__header">
+            <details class="record-panel record-panel--collapsible" data-loading-skeleton>
+                <summary class="record-panel__header">
                     <div>
                         <h2>Timeline</h2>
                         <p>{{ courrier.actionLogs|length }} action{{ courrier.actionLogs|length > 1 ? 's' : '' }} enregistrée{{ courrier.actionLogs|length > 1 ? 's' : '' }}.</p>
                     </div>
-                </div>
+                    <span class="record-panel__toggle" aria-hidden="true"></span>
+                </summary>
                 <div class="timeline-list">
                     {% for action in courrier.actionLogs|slice(0, 5) %}
                         <article class="timeline-item">
@@ -308,7 +309,7 @@
                         <p class="muted">Les 5 dernières actions sont affichées.</p>
                     {% endif %}
                 </div>
-            </section>
+            </details>
         </aside>
     </section>
 {% endblock %}

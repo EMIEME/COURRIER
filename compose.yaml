@@ -5,9 +5,8 @@ services:
     image: mariadb:${MARIADB_VERSION:-11.4}
     environment:
       MARIADB_DATABASE: ${MARIADB_DATABASE:-gestion_courrier}
-      # You should definitely change the password in production
-      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-!ChangeMe!}
-      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-!ChangeMeRoot!}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:?Set MARIADB_PASSWORD in your shell or compose env file}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Set MARIADB_ROOT_PASSWORD in your shell or compose env file}
       MARIADB_USER: ${MARIADB_USER:-app}
     healthcheck:
       test: ["CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -u$${MARIADB_USER} --password=$${MARIADB_PASSWORD} --silent"]

@@ -1,0 +1,74 @@
+name: gestioncourrier
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env.prod.local
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: "0"
+      DATABASE_URL: "mysql://${MARIADB_USER}:${MARIADB_PASSWORD}@database:3306/${MARIADB_DATABASE}?serverVersion=${MARIADB_VERSION:-11.4}-MariaDB&charset=utf8mb4"
+      APP_SHARE_DIR: /var/www/html/var/share
+      APP_VAR_DIR: /var/www/html/var
+      DATABASE_BACKUP_DIR: /var/www/html/var/backups/database
+      DEFAULT_URI: "${DEFAULT_URI:-https://ddadoc.org}"
+      SYMFONY_TRUSTED_HEADERS: "x-forwarded-for,x-forwarded-host,x-forwarded-proto,x-forwarded-port,x-forwarded-prefix"
+      SYMFONY_TRUSTED_PROXIES: "127.0.0.1,172.16.0.0/12"
+    depends_on:
+      database:
+        condition: service_healthy
+    volumes:
+      - app_var:/var/www/html/var
+      - app_uploads:/var/www/html/public/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "php -r 'exit(is_file(\"public/index.php\") ? 0 : 1);'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  database:
+    image: "mariadb:${MARIADB_VERSION:-11.4}"
+    restart: unless-stopped
+    env_file:
+      - .env.prod.local
+    environment:
+      MARIADB_DATABASE: "${MARIADB_DATABASE}"
+      MARIADB_USER: "${MARIADB_USER}"
+      MARIADB_PASSWORD: "${MARIADB_PASSWORD}"
+      MARIADB_ROOT_PASSWORD: "${MARIADB_ROOT_PASSWORD}"
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -u$${MARIADB_USER} --password=$${MARIADB_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    volumes:
+      - database_data:/var/lib/mysql
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    env_file:
+      - .env.prod.local
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  app_uploads:
+  app_var:
+  caddy_config:
+  caddy_data:
+  database_data:

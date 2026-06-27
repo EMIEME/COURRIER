@@ -145,6 +145,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function startPasswordReset(string $passwordResetTokenHash, ?\DateTimeImmutable $requestedAt = null): self
+    {
+        $this->passwordResetToken = trim($passwordResetTokenHash);
+        $this->passwordResetRequestedAt = $requestedAt ?? new \DateTimeImmutable();
+
+        return $this;
+    }
+
     public function clearPasswordReset(): self
     {
         $this->passwordResetToken = null;
@@ -153,13 +161,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function isPasswordResetTokenExpired(int $ttl = 3600): bool
+    public function isPasswordResetTokenExpired(int $ttl = 3600, ?\DateTimeImmutable $now = null): bool
     {
         if (null === $this->passwordResetRequestedAt) {
             return true;
         }
 
-        return $this->passwordResetRequestedAt->getTimestamp() + $ttl < time();
+        $now ??= new \DateTimeImmutable();
+
+        return $this->passwordResetRequestedAt->getTimestamp() + $ttl <= $now->getTimestamp();
     }
 
     public function eraseCredentials(): void

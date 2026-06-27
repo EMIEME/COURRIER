@@ -37,6 +37,7 @@ Application Symfony de gestion des courriers entrants, sortants et internes. Le 
 - Symfony CLI optionnel, utile pour lancer le serveur local.
 
 > Note : `compose.yaml` contient un service PostgreSQL genere par Symfony, mais les migrations presentes dans `migrations/` utilisent du SQL MySQL/MariaDB. Verifiez l'alignement de `DATABASE_URL`, de la base utilisee et des migrations avant de demarrer avec Docker Compose.
+> Si vous utilisez Docker Compose, fournissez `MARIADB_PASSWORD` et `MARIADB_ROOT_PASSWORD` via votre shell ou avec `docker compose --env-file .env.local up`.
 
 ## Installation locale
 
@@ -46,16 +47,15 @@ Application Symfony de gestion des courriers entrants, sortants et internes. Le 
 composer install
 ```
 
-2. Creer ou completer le fichier `.env.local` :
+2. Creer le fichier `.env.local` a partir du modele, puis remplacer les valeurs :
 
-```dotenv
-APP_SECRET=change-me
-DATABASE_URL="mysql://user:password@127.0.0.1:3306/gestioncourrier?serverVersion=8.0.32&charset=utf8mb4"
-MAILER_DSN=smtp://127.0.0.1:1025
-APP_MAIL_FROM_ADDRESS=no-reply@example.com
-APP_MAIL_FROM_NAME="Gestion Courrier"
-APP_MAIL_REPLY_TO_ADDRESS=no-reply@example.com
+```bash
+cp .env.local.example .env.local
+php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"
 ```
+
+Copier la valeur generee dans `APP_SECRET`, puis renseigner `DATABASE_URL`,
+`MAILER_DSN` et les adresses email dans `.env.local`.
 
 3. Creer la base de donnees :
 
@@ -154,7 +154,18 @@ var/                 Cache, logs et fichiers generes
 - `APP_MAIL_FROM_NAME`
 - `APP_MAIL_REPLY_TO_ADDRESS`
 
-Les valeurs locales sensibles doivent rester dans `.env.local`, qui est ignore par Git.
+Les valeurs sensibles doivent rester dans `.env.local`, `.env.*.local` ou dans
+les variables d'environnement du serveur. Ces fichiers locaux sont ignores par
+Git. Les valeurs presentes dans `.env` et `.env.local.example` sont uniquement
+des placeholders ou exemples non secrets.
+
+Pour la production, definir au minimum `APP_SECRET`, `DATABASE_URL`,
+`MAILER_DSN`, `APP_MAIL_FROM_ADDRESS` et `APP_MAIL_FROM_NAME` dans la plateforme
+de deploiement. Si une ancienne valeur de `APP_SECRET` suivie par Git a ete
+utilisee en production, la remplacer par une nouvelle valeur aleatoire et
+forcer la deconnexion des sessions existantes si necessaire. L'application
+refuse de demarrer en production si `APP_SECRET` ou `DATABASE_URL` contient
+encore une valeur placeholder.
 
 ## Deploiement Vercel
 
@@ -166,6 +177,59 @@ Le fichier `vercel.json` configure :
 - une base SQLite dans `/tmp/gestioncourrier/data_prod.db`.
 
 Le stockage dans `/tmp` sur une plateforme serverless peut etre temporaire. Pour une utilisation en production avec donnees persistantes, prevoyez une base externe adaptee.
+
+## Deploiement VPS avec Docker Compose
+
+Le projet contient une configuration de production pour VPS :
+
+- `Dockerfile` : image PHP 8.4 avec Apache, Composer et extensions Symfony/MySQL.
+- `compose.prod.yaml` : application Symfony, MariaDB et Caddy.
+- `docker/caddy/Caddyfile` : HTTPS automatique via Caddy.
+- `.env.prod.local.example` : modele de variables de production sans secrets.
+
+Sur le VPS, copier `.env.prod.local.example` vers `.env.prod.local`, puis remplacer
+les valeurs sensibles :
+
+```bash
+cp .env.prod.local.example .env.prod.local
+```
+
+Demarrer ou mettre a jour la production :
+
+```bash
+docker compose --env-file .env.prod.local -f compose.prod.yaml up -d --build
+docker compose --env-file .env.prod.local -f compose.prod.yaml exec app php bin/console doctrine:migrations:migrate --no-interaction
+```
+
+Verifier l'etat des conteneurs :
+
+```bash
+docker compose --env-file .env.prod.local -f compose.prod.yaml ps
+```
+
+## Deploiement VPS avec Nginx et PHP-FPM
+
+Si le VPS dispose deja de Nginx, PHP 8.4-FPM, Composer et MariaDB, la
+configuration Nginx de reference est disponible dans :
+
+```text
+deploy/nginx-gestioncourrier.conf
+```
+
+Apres synchronisation du code dans `/var/www/gestioncourrier`, activer le site :
+
+```bash
+sudo cp /var/www/gestioncourrier/deploy/nginx-gestioncourrier.conf /etc/nginx/sites-available/gestioncourrier
+sudo ln -sfn /etc/nginx/sites-available/gestioncourrier /etc/nginx/sites-enabled/gestioncourrier
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Puis verifier avec :
+
+```bash
+curl -H "Host: ddadoc.org" http://127.0.0.1/
+```
 
 ## Verification
 
@@ -181,9 +245,9 @@ php bin/console doctrine:migrations:status
 Les dossiers et fichiers suivants ne doivent pas etre versionnes :
 
 - `.env.local`
+- `.env.*.local`
 - `.vercel/`
 - `vendor/`
 - `var/`
 - les fichiers envoyes dans `public/uploads/courriers/`
 - les dumps SQL locaux
-

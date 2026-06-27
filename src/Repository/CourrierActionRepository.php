@@ -27,6 +27,20 @@ class CourrierActionRepository extends ServiceEntityRepository
     }
 
     /**
+     * @return list<int>
+     */
+    public function findRecentAssignmentCourrierIdsForUser(User $user, \DateTimeInterface $since): array
+    {
+        $rows = $this->createRecentAssignmentsForUserQueryBuilder($user, $since)
+            ->select('DISTINCT c.id AS id')
+            ->orderBy('c.id', 'ASC')
+            ->getQuery()
+            ->getArrayResult();
+
+        return array_map(static fn (array $row): int => (int) $row['id'], $rows);
+    }
+
+    /**
      * @return list<CourrierAction>
      */
     public function findRecentAssignmentsForUser(User $user, \DateTimeInterface $since, int $limit = 3): array

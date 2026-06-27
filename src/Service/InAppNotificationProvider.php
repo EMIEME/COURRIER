@@ -4,16 +4,23 @@ namespace App\Service;
 
 use App\Entity\Courrier;
 use App\Entity\CourrierAction;
+use App\Entity\InAppNotification;
 use App\Entity\User;
 use App\Repository\CourrierActionRepository;
 use App\Repository\CourrierRepository;
+use App\Repository\InAppNotificationRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 
 class InAppNotificationProvider
 {
+    private const MANAGED_TYPES = ['assignment', 'deadline', 'deletion'];
+
     public function __construct(
         private readonly CourrierRepository $courrierRepository,
         private readonly CourrierActionRepository $courrierActionRepository,
+        private readonly InAppNotificationRepository $notificationRepository,
+        private readonly EntityManagerInterface $entityManager,
         private readonly Security $security,
     ) {
     }
@@ -24,6 +31,8 @@ class InAppNotificationProvider
      *     items: list<array{
      *         type: string,
      *         severity: string,
+     *         id: int|null,
+     *         read: bool,
      *         title: string,
      *         message: string,
      *         route: string,
@@ -37,7 +46,30 @@ class InAppNotificationProvider
             return ['count' => 0, 'items' => []];
         }
 
-        $count = 0;
+        $this->syncGeneratedNotifications($user, $this->buildGeneratedNotifications($user));
+
+        return [
+            'count' => $this->notificationRepository->countUnreadForUser($user),
+            'items' => array_map(
+                fn (InAppNotification $notification): array => $this->toViewItem($notification),
+                $this->notificationRepository->findActiveForUser($user)
+            ),
+        ];
+    }
+
+    /**
+     * @return list<array{
+     *     fingerprint: string,
+     *     type: string,
+     *     severity: string,
+     *     title: string,
+     *     message: string,
+     *     route: string,
+     *     routeParams: array<string, mixed>
+     * }>
+     */
+    private function buildGeneratedNotifications(User $user): array
+    {
         $items = [];
         $today = new \DateTimeImmutable('today');
         $recentAssignmentSince = $today->modify('-7 days');
@@ -45,8 +77,9 @@ class InAppNotificationProvider
 
         $recentAssignmentCount = $this->courrierActionRepository->countRecentAssignmentsForUser($user, $recentAssignmentSince);
         if ($recentAssignmentCount > 0) {
-            $count += $recentAssignmentCount;
+            $courrierIds = $this->courrierActionRepository->findRecentAssignmentCourrierIdsForUser($user, $recentAssignmentSince);
             $items[] = [
+                'fingerprint' => $this->fingerprint($user, 'assignment', $courrierIds),
                 'type' => 'assignment',
                 'severity' => 'info',
                 'title' => $this->pluralize($recentAssignmentCount, 'Nouvelle imputation', 'Nouvelles imputations'),
@@ -61,8 +94,9 @@ class InAppNotificationProvider
 
         $upcomingDueCount = $this->courrierRepository->countUpcomingDueForUser($user, $today, $upcomingDueLimit);
         if ($upcomingDueCount > 0) {
-            $count += $upcomingDueCount;
+            $courrierIds = $this->courrierRepository->findUpcomingDueIdsForUser($user, $today, $upcomingDueLimit);
             $items[] = [
+                'fingerprint' => $this->fingerprint($user, 'deadline', $courrierIds),
                 'type' => 'deadline',
                 'severity' => 'warning',
                 'title' => $this->pluralize($upcomingDueCount, 'Échéance proche', 'Échéances proches'),
@@ -79,8 +113,9 @@ class InAppNotificationProvider
             $pendingDeletionCount = $this->courrierRepository->countPendingDeletion();
 
             if ($pendingDeletionCount > 0) {
-                $count += $pendingDeletionCount;
+                $courrierIds = $this->courrierRepository->findPendingDeletionIds();
                 $items[] = [
+                    'fingerprint' => $this->fingerprint($user, 'deletion', $courrierIds),
                     'type' => 'deletion',
                     'severity' => 'danger',
                     'title' => $this->pluralize($pendingDeletionCount, 'Suppression à valider', 'Suppressions à valider'),
@@ -91,10 +126,90 @@ class InAppNotificationProvider
             }
         }
 
+        return $items;
+    }
+
+    /**
+     * @param list<array{
+     *     fingerprint: string,
+     *     type: string,
+     *     severity: string,
+     *     title: string,
+     *     message: string,
+     *     route: string,
+     *     routeParams: array<string, mixed>
+     * }> $generatedNotifications
+     */
+    private function syncGeneratedNotifications(User $user, array $generatedNotifications): void
+    {
+        $changed = false;
+        $activeFingerprints = [];
+
+        foreach ($generatedNotifications as $generatedNotification) {
+            $activeFingerprints[] = $generatedNotification['fingerprint'];
+            $notification = $this->notificationRepository->findOneForUserAndFingerprint($user, $generatedNotification['fingerprint']);
+
+            if (!$notification) {
+                $notification = (new InAppNotification())
+                    ->setRecipient($user)
+                    ->setFingerprint($generatedNotification['fingerprint']);
+                $this->entityManager->persist($notification);
+                $changed = true;
+            }
+
+            $changed = $notification->syncGenerated(
+                $generatedNotification['type'],
+                $generatedNotification['severity'],
+                $generatedNotification['title'],
+                $generatedNotification['message'],
+                $generatedNotification['route'],
+                $generatedNotification['routeParams'],
+            ) || $changed;
+        }
+
+        foreach ($this->notificationRepository->findActiveManagedForUser($user, self::MANAGED_TYPES) as $notification) {
+            if (!in_array($notification->getFingerprint(), $activeFingerprints, true)) {
+                $changed = $notification->deactivate() || $changed;
+            }
+        }
+
+        if ($changed) {
+            $this->entityManager->flush();
+        }
+    }
+
+    /**
+     * @return array{
+     *     id: int|null,
+     *     type: string,
+     *     severity: string,
+     *     read: bool,
+     *     title: string,
+     *     message: string,
+     *     route: string,
+     *     routeParams: array<string, mixed>
+     * }
+     */
+    private function toViewItem(InAppNotification $notification): array
+    {
         return [
-            'count' => $count,
-            'items' => $items,
+            'id' => $notification->getId(),
+            'type' => $notification->getType(),
+            'severity' => $notification->getSeverity(),
+            'read' => $notification->isRead(),
+            'title' => $notification->getTitle(),
+            'message' => $notification->getMessage(),
+            'route' => $notification->getRoute(),
+            'routeParams' => $notification->getRouteParams(),
         ];
+    }
+
+    /**
+     * @param list<int> $courrierIds
+     */
+    private function fingerprint(User $user, string $type, array $courrierIds): string
+    {
+        return hash('sha256', sprintf('%s:%s:%s', $user->getId() ?? 'anonymous', $type, implode(',', $courrierIds)));
     }
 
     private function pluralize(int $count, string $singular, string $plural): string

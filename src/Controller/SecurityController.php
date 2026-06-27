@@ -15,6 +15,7 @@ use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -22,6 +23,8 @@ use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
 class SecurityController extends AbstractController
 {
+    private const PASSWORD_RESET_TOKEN_TTL = 3600;
+
     #[Route('/login', name: 'app_login')]
     public function login(AuthenticationUtils $authenticationUtils): Response|RedirectResponse
     {
@@ -40,21 +43,27 @@ class SecurityController extends AbstractController
     }
 
     #[Route('/forgot-password', name: 'app_forgot_password', methods: ['GET', 'POST'])]
-    public function forgotPassword(Request $request, EntityManagerInterface $entityManager, UserRepository $userRepository, MailerInterface $mailer, UrlGeneratorInterface $urlGenerator, ParameterBagInterface $parameterBag): Response
+    public function forgotPassword(Request $request, EntityManagerInterface $entityManager, UserRepository $userRepository, MailerInterface $mailer, UrlGeneratorInterface $urlGenerator, ParameterBagInterface $parameterBag, RateLimiterFactory $forgotPasswordIpLimiter, RateLimiterFactory $forgotPasswordEmailLimiter): Response
     {
         $form = $this->createForm(ForgotPasswordRequestType::class);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $email = (string) $form->get('email')->getData();
+            $email = strtolower(trim((string) $form->get('email')->getData()));
+
+            if (!$this->isForgotPasswordRequestAllowed($request, $email, $forgotPasswordIpLimiter, $forgotPasswordEmailLimiter)) {
+                $this->addFlash('success', 'Si cette adresse email est enregistrée, un lien de réinitialisation vous a été envoyé.');
+
+                return $this->redirectToRoute('app_login');
+            }
+
             $user = $userRepository->findOneBy(['email' => $email]);
 
             if ($user) {
-                    $token = bin2hex(random_bytes(32));
-                    $user->setPasswordResetToken($token);
-                    $user->setPasswordResetRequestedAt(new \DateTimeImmutable());
-                    $entityManager->persist($user);
-                    $entityManager->flush();
+                $token = bin2hex(random_bytes(32));
+                $user->startPasswordReset($this->hashPasswordResetToken($token));
+                $entityManager->persist($user);
+                $entityManager->flush();
                 $resetUrl = $urlGenerator->generate('app_reset_password', ['token' => $token], UrlGeneratorInterface::ABSOLUTE_URL);
                 $fromAddress = (string) $parameterBag->get('app.mail_from_address');
                 $fromName = (string) $parameterBag->get('app.mail_from_name');
@@ -87,13 +96,23 @@ class SecurityController extends AbstractController
         ]);
     }
 
+    private function isForgotPasswordRequestAllowed(Request $request, string $email, RateLimiterFactory $forgotPasswordIpLimiter, RateLimiterFactory $forgotPasswordEmailLimiter): bool
+    {
+        $ipKey = $request->getClientIp() ?: 'unknown-ip';
+        $emailKey = hash('sha256', $email);
+
+        return $forgotPasswordIpLimiter->create($ipKey)->consume()->isAccepted()
+            && $forgotPasswordEmailLimiter->create($emailKey)->consume()->isAccepted();
+    }
+
     #[Route('/reset-password/{token}', name: 'app_reset_password', methods: ['GET', 'POST'])]
     public function resetPassword(Request $request, string $token, UserRepository $userRepository, UserPasswordHasherInterface $passwordHasher, EntityManagerInterface $entityManager): Response
     {
-        $user = $userRepository->findOneBy(['passwordResetToken' => $token]);
-        $tokenTtl = 3600;
+        $user = $this->isValidPasswordResetTokenFormat($token)
+            ? $userRepository->findOneBy(['passwordResetToken' => $this->hashPasswordResetToken($token)])
+            : null;
 
-        if (!$user || $user->isPasswordResetTokenExpired($tokenTtl)) {
+        if (!$user || $user->isPasswordResetTokenExpired(self::PASSWORD_RESET_TOKEN_TTL)) {
             if ($user) {
                 $user->clearPasswordReset();
                 $entityManager->flush();
@@ -121,6 +140,16 @@ class SecurityController extends AbstractController
         return $this->render('security/reset_password.html.twig', [
             'form' => $form->createView(),
         ]);
+    }
+
+    private function hashPasswordResetToken(string $token): string
+    {
+        return hash('sha256', trim($token));
+    }
+
+    private function isValidPasswordResetTokenFormat(string $token): bool
+    {
+        return 1 === preg_match('/\A[a-f0-9]{64}\z/i', $token);
     }
 
     #[Route('/compte/sans-acces', name: 'app_account_no_access', methods: ['GET'])]

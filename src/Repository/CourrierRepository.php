@@ -239,12 +239,41 @@ class CourrierRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
+    /**
+     * @return list<int>
+     */
+    public function findPendingDeletionIds(): array
+    {
+        $rows = $this->createQueryBuilder('c')
+            ->select('c.id AS id')
+            ->andWhere('c.deletionRequestedAt IS NOT NULL')
+            ->orderBy('c.id', 'ASC')
+            ->getQuery()
+            ->getArrayResult();
+
+        return array_map(static fn (array $row): int => (int) $row['id'], $rows);
+    }
+
     public function countUpcomingDueForUser(User $user, \DateTimeInterface $from, \DateTimeInterface $to): int
     {
         return (int) $this->createUpcomingDueForUserQueryBuilder($user, $from, $to)
             ->select('COUNT(DISTINCT c.id)')
             ->getQuery()
             ->getSingleScalarResult();
+    }
+
+    /**
+     * @return list<int>
+     */
+    public function findUpcomingDueIdsForUser(User $user, \DateTimeInterface $from, \DateTimeInterface $to): array
+    {
+        $rows = $this->createUpcomingDueForUserQueryBuilder($user, $from, $to)
+            ->select('DISTINCT c.id AS id')
+            ->orderBy('c.id', 'ASC')
+            ->getQuery()
+            ->getArrayResult();
+
+        return array_map(static fn (array $row): int => (int) $row['id'], $rows);
     }
 
     /**

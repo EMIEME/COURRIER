@@ -1,0 +1,4 @@
+{$SERVER_NAME:ddadoc.org} {
+    encode zstd gzip
+    reverse_proxy app:80
+}

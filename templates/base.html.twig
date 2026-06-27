@@ -247,6 +247,14 @@
                     padding: 10px;
                 }
 
+                .notification-item--read {
+                    opacity: 0.72;
+                }
+
+                .notification-item--unread {
+                    background: #fffdf8;
+                }
+
                 .notification-item:hover {
                     background: #fbfdf9;
                     border-color: #bdd2b6;
@@ -254,6 +262,14 @@
 
                 .notification-item--warning { border-left-color: var(--warning); }
                 .notification-item--danger { border-left-color: var(--accent); }
+
+                .notification-item__link {
+                    color: inherit;
+                    display: grid;
+                    gap: 4px;
+                    text-decoration: none;
+                }
+
                 .notification-item strong {
                     color: var(--text);
                     font-size: 14px;
@@ -263,6 +279,31 @@
                     font-size: 12px;
                     line-height: 1.45;
                 }
+
+                .notification-item__actions {
+                    display: flex;
+                    justify-content: flex-end;
+                    margin-top: 4px;
+                }
+
+                .notification-item__actions form {
+                    margin: 0;
+                }
+
+                .notification-toggle {
+                    background: transparent;
+                    border: 0;
+                    color: var(--primary-strong);
+                    cursor: pointer;
+                    font-size: 12px;
+                    font-weight: 750;
+                    padding: 0;
+                }
+
+                .notification-toggle:hover {
+                    text-decoration: underline;
+                }
+
                 .notification-empty {
                     background: #f7faf4;
                     border: 1px dashed #cfe0c8;
@@ -1228,6 +1269,46 @@
                     color: var(--primary-strong);
                     margin-bottom: 4px;
                 }
+                .record-panel--collapsible {
+                    gap: 0;
+                }
+                .record-panel--collapsible summary {
+                    cursor: pointer;
+                    list-style: none;
+                    user-select: none;
+                }
+                .record-panel--collapsible summary::-webkit-details-marker {
+                    display: none;
+                }
+                .record-panel--collapsible .record-panel__header {
+                    margin-bottom: 0;
+                    padding-bottom: 0;
+                }
+                .record-panel--collapsible[open] .record-panel__header {
+                    margin-bottom: 16px;
+                    padding-bottom: 12px;
+                }
+                .record-panel__toggle {
+                    align-items: center;
+                    background: #f7faf4;
+                    border: 1px solid var(--border);
+                    border-radius: 999px;
+                    color: var(--primary-strong);
+                    display: inline-flex;
+                    flex: 0 0 auto;
+                    font-size: 18px;
+                    font-weight: 850;
+                    height: 30px;
+                    justify-content: center;
+                    line-height: 1;
+                    width: 30px;
+                }
+                .record-panel--collapsible .record-panel__toggle::before {
+                    content: '+';
+                }
+                .record-panel--collapsible[open] .record-panel__toggle::before {
+                    content: '-';
+                }
                 .record-due {
                     background: #f7faf4;
                     border: 1px solid #dce9d6;
@@ -2171,10 +2252,27 @@
                                     {% endif %}
                                 </div>
                                 {% for notification in notificationCenter.items %}
-                                    <a class="notification-item notification-item--{{ notification.severity }}" href="{{ path(notification.route, notification.routeParams) }}">
-                                        <strong>{{ notification.title }}</strong>
-                                        <p>{{ notification.message }}</p>
-                                    </a>
+                                    <article class="notification-item notification-item--{{ notification.severity }} notification-item--{{ notification.read ? 'read' : 'unread' }}">
+                                        <a class="notification-item__link" href="{{ path(notification.route, notification.routeParams) }}">
+                                            <strong>{{ notification.title }}</strong>
+                                            <p>{{ notification.message }}</p>
+                                        </a>
+                                        {% if notification.id %}
+                                            <div class="notification-item__actions">
+                                                {% if notification.read %}
+                                                    <form method="post" action="{{ path('app_notification_mark_unread', {id: notification.id}) }}">
+                                                        <input type="hidden" name="_token" value="{{ csrf_token('notification-unread' ~ notification.id) }}">
+                                                        <button class="notification-toggle" type="submit">Marquer non lue</button>
+                                                    </form>
+                                                {% else %}
+                                                    <form method="post" action="{{ path('app_notification_mark_read', {id: notification.id}) }}">
+                                                        <input type="hidden" name="_token" value="{{ csrf_token('notification-read' ~ notification.id) }}">
+                                                        <button class="notification-toggle" type="submit">Marquer lue</button>
+                                                    </form>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    </article>
                                 {% else %}
                                     <p class="notification-empty">Aucune notification active.</p>
                                 {% endfor %}
