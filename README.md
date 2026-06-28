@@ -129,7 +129,7 @@ bin/                 Commandes Symfony
 config/              Configuration Symfony
 migrations/          Migrations Doctrine
 public/              Racine web publique
-public/uploads/      Pieces jointes des courriers
+var/uploads/         Pieces jointes des courriers, servies via Symfony
 src/Command/         Commandes applicatives
 src/Controller/      Controleurs HTTP
 src/Entity/          Entites Doctrine
@@ -249,5 +249,5 @@ Les dossiers et fichiers suivants ne doivent pas etre versionnes :
 - `.vercel/`
 - `vendor/`
 - `var/`
-- les fichiers envoyes dans `public/uploads/courriers/`
+- les fichiers envoyes dans `var/uploads/courriers/`
 - les dumps SQL locaux

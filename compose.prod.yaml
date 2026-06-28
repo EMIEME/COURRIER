@@ -23,7 +23,7 @@ services:
         condition: service_healthy
     volumes:
       - app_var:/var/www/html/var
-      - app_uploads:/var/www/html/public/uploads
+      - app_uploads:/var/www/html/var/uploads
     healthcheck:
       test: ["CMD-SHELL", "php -r 'exit(is_file(\"public/index.php\") ? 0 : 1);'"]
       interval: 30s

@@ -29,8 +29,8 @@ COPY . .
 
 RUN set -eux; \
     composer install --no-dev --prefer-dist --no-progress --no-interaction --no-scripts --optimize-autoloader; \
-    mkdir -p var/cache var/log var/share var/backups/database public/uploads/courriers; \
-    chown -R www-data:www-data var public/uploads; \
+    mkdir -p var/cache var/log var/share var/backups/database var/uploads/courriers; \
+    chown -R www-data:www-data var; \
     chmod +x /usr/local/bin/docker-entrypoint
 
 ENTRYPOINT ["docker-entrypoint"]
