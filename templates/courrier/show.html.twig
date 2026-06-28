@@ -16,14 +16,6 @@
     {% set todayTimestamp = 'today'|date('U') %}
     {% set dueState = dueTimestamp and dueTimestamp < todayTimestamp ? 'is-overdue' : (dueTimestamp == todayTimestamp ? 'is-today' : '') %}
 
-    <nav class="breadcrumbs" aria-label="Fil d'Ariane">
-        <a href="{{ path('app_dashboard') }}">Tableau de bord</a>
-        <span class="breadcrumbs__separator" aria-hidden="true">/</span>
-        <a href="{{ path('app_courrier_index') }}">Courriers</a>
-        <span class="breadcrumbs__separator" aria-hidden="true">/</span>
-        <span aria-current="page">Détail courrier</span>
-    </nav>
-
     <div class="topbar page-band">
         <div>
             <h1>{{ courrier.subject }}</h1>
@@ -65,7 +57,6 @@
                 <div class="record-panel__header">
                     <div>
                         <h2>Informations clés</h2>
-                        <p>Contact, classement et liens associés.</p>
                     </div>
                 </div>
                 <dl class="record-meta-grid record-meta-grid--compact">
@@ -102,11 +93,7 @@
                 <div class="record-panel__header">
                     <div>
                         <h2>Notes et pièce jointe</h2>
-                        <p>Contenu saisi et document numérisé.</p>
                     </div>
-                    {% if courrier.attachmentFilename %}
-                        <span class="badge">Pièce jointe</span>
-                    {% endif %}
                 </div>
 
                 {% if courrier.content %}
@@ -136,7 +123,7 @@
                             </svg>
                         </span>
                         <div class="document-file__body">
-                            <span class="attachment-name">{{ courrier.attachmentFilename|split('/')|last }}</span>
+                            <span class="attachment-name">Pièce jointe</span>
                             <div class="actions attachment-actions">
                                 <a class="button secondary" href="{{ attachmentUrl }}" target="_blank">Ouvrir</a>
                                 <a class="button secondary" href="{{ attachmentDownloadUrl }}" download>Télécharger</a>
@@ -185,7 +172,6 @@
                 <div class="record-panel__header">
                     <div>
                         <h2>Suivi</h2>
-                        <p>Imputation, statut et notes de traitement.</p>
                     </div>
                 </div>
 

@@ -14,14 +14,6 @@
     {% set isPendingDeletionView = isPendingDeletionView is defined ? isPendingDeletionView : false %}
     {% set selectedAssignedUser = selectedAssignedUser|default(null) %}
 
-    <nav class="breadcrumbs" aria-label="Fil d'Ariane">
-        <a href="{{ path('app_dashboard') }}">Tableau de bord</a>
-        <span class="breadcrumbs__separator" aria-hidden="true">/</span>
-        <a href="{{ path('app_courrier_index') }}">Courriers</a>
-        <span class="breadcrumbs__separator" aria-hidden="true">/</span>
-        <span aria-current="page">{{ pageTitle }}</span>
-    </nav>
-
     <div class="topbar page-band">
         <div>
             <h1>{{ pageTitle }}</h1>

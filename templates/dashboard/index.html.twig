@@ -3,14 +3,9 @@
 {% block title %}Tableau de bord{% endblock %}
 
 {% block body %}
-    <nav class="breadcrumbs" aria-label="Fil d'Ariane">
-        <span aria-current="page">Tableau de bord</span>
-    </nav>
-
     <div class="topbar page-band">
         <div>
             <h1>Tableau de bord</h1>
-            <p>Vue d'ensemble des courriers reçus, envoyés et à traiter.</p>
         </div>
         {% if is_granted('ROLE_COURRIER_EDIT') %}
             <div class="actions">

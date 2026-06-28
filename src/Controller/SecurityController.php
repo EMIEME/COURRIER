@@ -7,6 +7,7 @@ use App\Form\ResetPasswordType;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -43,7 +44,18 @@ class SecurityController extends AbstractController
     }
 
     #[Route('/forgot-password', name: 'app_forgot_password', methods: ['GET', 'POST'])]
-    public function forgotPassword(Request $request, EntityManagerInterface $entityManager, UserRepository $userRepository, MailerInterface $mailer, UrlGeneratorInterface $urlGenerator, ParameterBagInterface $parameterBag, RateLimiterFactory $forgotPasswordIpLimiter, RateLimiterFactory $forgotPasswordEmailLimiter): Response
+    public function forgotPassword(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        UserRepository $userRepository,
+        MailerInterface $mailer,
+        UrlGeneratorInterface $urlGenerator,
+        ParameterBagInterface $parameterBag,
+        #[Autowire(service: 'limiter.forgot_password_ip')]
+        RateLimiterFactory $forgotPasswordIpLimiter,
+        #[Autowire(service: 'limiter.forgot_password_email')]
+        RateLimiterFactory $forgotPasswordEmailLimiter,
+    ): Response
     {
         $form = $this->createForm(ForgotPasswordRequestType::class);
         $form->handleRequest($request);
