@@ -19,6 +19,7 @@ class CourrierAssignmentNotifier
         private readonly string $fromAddress,
         private readonly string $fromName,
         private readonly string $replyToAddress,
+        private readonly string $uploadsDirectory,
     ) {
     }
 
@@ -92,7 +93,43 @@ class CourrierAssignmentNotifier
             $email->replyTo(new Address($this->replyToAddress, $this->fromName));
         }
 
+        $this->attachCourrierFile($email, $courrier);
+
         return $email;
+    }
+
+    private function attachCourrierFile(Email $email, Courrier $courrier): void
+    {
+        $attachmentPath = $this->attachmentFullPath($courrier->getAttachmentFilename());
+        if (null === $attachmentPath) {
+            return;
+        }
+
+        $contentType = mime_content_type($attachmentPath) ?: 'application/octet-stream';
+        $email->attachFromPath($attachmentPath, basename($attachmentPath), $contentType);
+    }
+
+    private function attachmentFullPath(?string $attachmentPath): ?string
+    {
+        $attachmentPath = trim((string) $attachmentPath);
+
+        if ('' === $attachmentPath || str_starts_with($attachmentPath, DIRECTORY_SEPARATOR) || str_contains($attachmentPath, '..')) {
+            return null;
+        }
+
+        $uploadsDirectory = rtrim($this->uploadsDirectory, DIRECTORY_SEPARATOR);
+        $uploadsRealPath = realpath($uploadsDirectory);
+        $attachmentRealPath = realpath($uploadsDirectory.DIRECTORY_SEPARATOR.$attachmentPath);
+
+        if (!$uploadsRealPath || !$attachmentRealPath || !str_starts_with($attachmentRealPath, $uploadsRealPath.DIRECTORY_SEPARATOR)) {
+            $this->logger->warning('La pièce jointe du courrier n\'a pas été ajoutée à la notification email.', [
+                'attachment' => $attachmentPath,
+            ]);
+
+            return null;
+        }
+
+        return is_file($attachmentRealPath) ? $attachmentRealPath : null;
     }
 
     private function buildTextBody(Courrier $courrier, User $recipient, string $url): string
@@ -100,7 +137,7 @@ class CourrierAssignmentNotifier
         $lines = [
             sprintf('Bonjour %s,', $recipient->getFullName() ?: $recipient->getEmail()),
             '',
-            'Un courrier vous a été imputé.',
+            'Un courrier nécessitant une réponse vous a été imputé.',
             '',
             sprintf('Référence: %s', $courrier->getReference()),
             sprintf('Objet: %s', $courrier->getSubject()),
@@ -109,7 +146,7 @@ class CourrierAssignmentNotifier
             sprintf('Interlocuteur: %s', $courrier->getInterlocuteurLabel()),
             sprintf('Échéance de réponse: %s', $this->formatDate($courrier->getResponseDueAt())),
             '',
-            sprintf('Consulter le courrier auprès de votre gestionnaire de courriers'),
+            'Voir le service Courrier pour toute information complémentaire.',
         ];
 
         return implode("\n", $lines);
@@ -120,7 +157,7 @@ class CourrierAssignmentNotifier
         $escape = static fn (?string $value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
         return sprintf(
-            '<p>Bonjour %s,</p><p>Un courrier vous a été imputé.</p><ul><li><strong>Référence:</strong> %s</li><li><strong>Objet:</strong> %s</li><li><strong>Nature:</strong> %s</li><li><strong>Date du courrier:</strong> %s</li><li><strong>Interlocuteur:</strong> %s</li><li><strong>Échéance de réponse:</strong> %s</li></ul><p>Consulter le courrier auprès de votre gestionnaire de courriers</p>',
+            '<p>Bonjour %s,</p><p>Un courrier nécessitant une réponse vous a été imputé.</p><ul><li><strong>Référence:</strong> %s</li><li><strong>Objet:</strong> %s</li><li><strong>Nature:</strong> %s</li><li><strong>Date du courrier:</strong> %s</li><li><strong>Interlocuteur:</strong> %s</li><li><strong>Échéance de réponse:</strong> %s</li></ul><p>Voir le service Courrier pour toute information complémentaire.</p>',
             $escape($recipient->getFullName() ?: $recipient->getEmail()),
             $escape($courrier->getReference()),
             $escape($courrier->getSubject()),

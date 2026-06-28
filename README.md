@@ -167,6 +167,20 @@ forcer la deconnexion des sessions existantes si necessaire. L'application
 refuse de demarrer en production si `APP_SECRET` ou `DATABASE_URL` contient
 encore une valeur placeholder.
 
+Pour IONOS, le DSN SMTP prend generalement cette forme :
+
+```bash
+MAILER_DSN=smtps://utilisateur%40domaine.tld:mot-de-passe@smtp.ionos.fr:465
+```
+
+Dans `MAILER_DSN`, les caracteres speciaux doivent etre encodes en URL :
+`@` devient `%40`, `#` devient `%23`, `%` devient `%25`, etc. Vous pouvez
+tester la configuration sans imputer de courrier avec :
+
+```bash
+php bin/console app:mailer:test destinataire@example.com
+```
+
 ## Deploiement Vercel
 
 Le fichier `vercel.json` configure :
