@@ -175,7 +175,7 @@
         </a>
     </section>
 
-    <section class="grid two">
+    <section class="grid two dashboard-courriers-grid">
         <div class="table-wrap" data-loading-skeleton>
             <table>
                 <thead>
@@ -248,7 +248,6 @@
                     <h2>Courriers urgents</h2>
                     <p>{{ urgentCourriers|length }} priorité{{ urgentCourriers|length > 1 ? 's' : '' }} à suivre</p>
                 </div>
-                <span class="badge urgent">Urgent</span>
             </div>
             <div class="priority-list">
                 {% for courrier in urgentCourriers|slice(0, 6) %}

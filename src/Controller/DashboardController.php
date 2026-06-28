@@ -20,7 +20,7 @@ class DashboardController extends AbstractController
     {
         $urgencyUpdater->updateOverdueCourriers();
 
-        $perPage = 20;
+        $perPage = 5;
         $page = max(1, $request->query->getInt('page', 1));
         $periodFilters = [
             'dateFrom' => $request->query->get('dateFrom'),

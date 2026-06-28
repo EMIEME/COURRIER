@@ -480,6 +480,9 @@
                 .grid { display: grid; gap: 16px; }
                 .grid.stats { grid-template-columns: repeat(6, minmax(130px, 1fr)); margin-bottom: 18px; }
                 .grid.two { grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr); }
+                .dashboard-courriers-grid {
+                    grid-template-columns: minmax(0, 2.4fr) minmax(260px, 0.6fr);
+                }
 
                 .card, .table-wrap, .form-panel {
                     background: var(--panel);
@@ -929,7 +932,10 @@
                     padding-bottom: 10px;
                 }
 
-                .form-section__header h2 { margin: 0; }
+                .form-section__header h2 {
+                    color: var(--accent-strong);
+                    margin: 0;
+                }
                 .form-section__header p { margin-top: 4px; }
                 .courrier-form-panel .form-grid { gap: 16px; }
                 .is-hidden { display: none !important; }
@@ -957,31 +963,35 @@
                     gap: 8px;
                 }
                 .status-choice {
-                    background: var(--panel-soft);
-                    border: 1px solid var(--border);
+                    background: #eef0ed;
+                    border: 1px solid #cfd6d0;
                     border-radius: 999px;
-                    color: #2a3d30;
+                    color: #6a746e;
+                    font-weight: 750;
                     min-height: 34px;
                     padding: 7px 12px;
+                    transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease, color 160ms ease;
                 }
                 .status-choice:hover {
-                    background: #e2eddd;
+                    background: #e4e8e4;
+                    border-color: #b9c4bb;
                     color: var(--text);
                 }
                 .status-choice.is-selected {
+                    color: var(--text);
                     box-shadow: 0 0 0 3px rgba(11, 107, 58, 0.12);
                 }
-                .status-choice--en_cours {
+                .status-choice--en_cours.is-selected {
                     background: #fff2cf;
                     border-color: #f0c36d;
                     color: var(--warning);
                 }
-                .status-choice--traite {
+                .status-choice--traite.is-selected {
                     background: #dff3e8;
                     border-color: #aad9be;
                     color: var(--success);
                 }
-                .status-choice--urgent {
+                .status-choice--urgent.is-selected {
                     background: #ffe7d0;
                     border-color: #f3b179;
                     color: #9a3900;
@@ -2294,26 +2304,6 @@
                                             </span>
                                             <span>Tableau de bord</span>
                                         </a>
-                                        <a class="{{ currentRoute == 'app_courrier_mine' ? 'active' : '' }}" href="{{ path('app_courrier_mine') }}">
-                                            <span class="nav__icon" aria-hidden="true">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <path d="M4 4h16v16H4z"/>
-                                                    <path d="M8 4v6h8V4"/>
-                                                    <path d="M8 15h8"/>
-                                                </svg>
-                                            </span>
-                                            <span>Mes courriers</span>
-                                        </a>
-                                        <a class="{{ currentRoute in ['app_courrier_index', 'app_courrier_show', 'app_courrier_edit'] ? 'active' : '' }}" href="{{ path('app_courrier_index') }}">
-                                            <span class="nav__icon" aria-hidden="true">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <circle cx="11" cy="11" r="7"/>
-                                                    <path d="m16.5 16.5 4 4"/>
-                                                    <path d="M8 11h6"/>
-                                                </svg>
-                                            </span>
-                                            <span>Rechercher</span>
-                                        </a>
                                     {% endif %}
                                     {% if is_granted('ROLE_COURRIER_EDIT') %}
                                         <a class="{{ currentRoute == 'app_courrier_new' ? 'active' : '' }}" href="{{ path('app_courrier_new') }}">
@@ -2326,6 +2316,28 @@
                                                 </svg>
                                             </span>
                                             <span>Nouveau courrier</span>
+                                        </a>
+                                    {% endif %}
+                                    {% if is_granted('ROLE_COURRIER_VIEW') %}
+                                        <a class="{{ currentRoute in ['app_courrier_index', 'app_courrier_show', 'app_courrier_edit'] ? 'active' : '' }}" href="{{ path('app_courrier_index') }}">
+                                            <span class="nav__icon" aria-hidden="true">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <circle cx="11" cy="11" r="7"/>
+                                                    <path d="m16.5 16.5 4 4"/>
+                                                    <path d="M8 11h6"/>
+                                                </svg>
+                                            </span>
+                                            <span>Rechercher</span>
+                                        </a>
+                                        <a class="{{ currentRoute == 'app_courrier_mine' ? 'active' : '' }}" href="{{ path('app_courrier_mine') }}">
+                                            <span class="nav__icon" aria-hidden="true">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M4 4h16v16H4z"/>
+                                                    <path d="M8 4v6h8V4"/>
+                                                    <path d="M8 15h8"/>
+                                                </svg>
+                                            </span>
+                                            <span>Mes courriers</span>
                                         </a>
                                     {% endif %}
                                 </div>

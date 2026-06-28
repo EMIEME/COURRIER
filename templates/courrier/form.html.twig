@@ -6,7 +6,6 @@
     <div class="topbar page-band">
         <div>
             <h1>{{ title }}</h1>
-            <p>Référence, localisation, pièce jointe, imputation et suivi de réponse.</p>
         </div>
         <div class="actions">
             <a class="button secondary" href="{{ path('app_courrier_index') }}">Retour</a>
@@ -19,7 +18,6 @@
             <section class="form-section">
                 <div class="form-section__header">
                     <h2>Identification</h2>
-                    <p>Référence, nature, date et statut de traitement.</p>
                 </div>
                 <div class="form-grid">
                     <div>{{ form_row(form.reference) }}</div>
@@ -70,7 +68,6 @@
             <section class="form-section">
                 <div class="form-section__header">
                     <h2>Contacts</h2>
-                    <p>Le champ affiche l'émetteur ou les destinataires selon la nature sélectionnée.</p>
                 </div>
                 <div class="form-grid">
                     <div data-visible-for="entrant">
@@ -113,7 +110,6 @@
             <section class="form-section">
                 <div class="form-section__header">
                     <h2>Contenu</h2>
-                    <p>Objet, mots-clés, suivi et document numérisé.</p>
                 </div>
                 <div class="form-grid">
                     <div class="full">{{ form_row(form.subject) }}</div>

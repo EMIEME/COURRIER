@@ -98,7 +98,6 @@ class CourrierController extends AbstractController
                 'totalPages' => $totalPages,
             ],
             'pageTitle' => 'Mes courriers',
-            'pageDescription' => 'Courriers qui vous sont imputés, avec les urgences et échéances en priorité.',
             'listRoute' => 'app_courrier_mine',
             'emptyMessage' => 'Aucun courrier ne vous est actuellement imputé.',
             'isMineView' => true,
@@ -157,6 +156,7 @@ class CourrierController extends AbstractController
     public function new(Request $request, EntityManagerInterface $entityManager, CourrierAssignmentNotifier $assignmentNotifier): Response
     {
         $courrier = new Courrier();
+        $courrier->setStatus(Courrier::STATUS_TRAITE);
         $form = $this->createForm(CourrierType::class, $courrier, [
             'current_courrier' => $courrier,
             'can_validate' => $this->isGranted('ROLE_COURRIER_VALIDATE'),

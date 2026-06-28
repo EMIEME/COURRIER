@@ -4,7 +4,6 @@
 
 {% block body %}
     {% set pageTitle = pageTitle|default('Trouver un courrier') %}
-    {% set pageDescription = pageDescription|default('Recherche multicritère par référence, date, interlocuteur, statut, imputation et contenu.') %}
     {% set listRoute = listRoute|default('app_courrier_index') %}
     {% set exportFilters = exportFilters|default(filters) %}
     {% set emptyMessage = emptyMessage|default('Aucun courrier ne correspond aux critères actuels.') %}
@@ -17,7 +16,6 @@
     <div class="topbar page-band">
         <div>
             <h1>{{ pageTitle }}</h1>
-            <p>{{ pageDescription }}</p>
         </div>
         <div class="actions">
             <a class="button secondary export-button" href="{{ path('app_courrier_export', exportFilters|merge({format: 'excel'})) }}" title="Exporter la liste filtrée vers Excel">
