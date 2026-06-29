@@ -4,50 +4,26 @@
 
 {% block body %}
     <section class="login-page">
-        <div class="login-shell">
-            <div class="login-intro">
+        <div class="login-shell" aria-label="Connexion Gestion du courrier">
+            <aside class="login-visual" aria-label="Gestion du courrier">
                 <div class="login-brand">
                     <span class="login-brand__mark" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5z"/>
-                            <path d="m8 9 4 3 4-3"/>
-                            <path d="M8 15h8"/>
-                        </svg>
+                        <img src="{{ asset('images/logo-gestion-courrier.png') }}" alt="">
                     </span>
-                    <span>Gestion Courrier</span>
+                    <span>
+                        <strong>Gestion du courrier</strong>
+                        <small>Plateforme interne</small>
+                    </span>
                 </div>
 
-                <h1>Accès sécurisé au registre des courriers</h1>
-                <p>Connectez-vous pour enregistrer, rechercher, imputer et suivre les courriers administratifs depuis un espace de travail centralisé.</p>
+                <ul class="login-visual__features" aria-label="Fonctionnalités principales">
+                    <li>Registre consultable et exportable</li>
+                    <li>Suivi des statuts, imputations et réponses</li>
+                    <li>Historique des actions et traçabilité</li>
+                </ul>
+            </aside>
 
-                <div class="login-features" aria-label="Fonctionnalités principales">
-                    <div class="login-feature">
-                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M4 5h16"/>
-                            <path d="M4 12h16"/>
-                            <path d="M4 19h10"/>
-                        </svg>
-                        <span>Registre consultable et exportable</span>
-                    </div>
-                    <div class="login-feature">
-                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M9 12l2 2 4-4"/>
-                            <circle cx="12" cy="12" r="9"/>
-                        </svg>
-                        <span>Suivi des statuts, imputations et réponses</span>
-                    </div>
-                    <div class="login-feature">
-                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M12 3v18"/>
-                            <path d="M5 8h14"/>
-                            <path d="M7 16h10"/>
-                        </svg>
-                        <span>Historique des actions et traçabilité</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="login-card">
+            <div class="login-panel">
                 <div class="login-card__head">
                     <h2>Connexion</h2>
                     <p>Renseignez vos identifiants pour accéder à l'application.</p>
@@ -62,33 +38,70 @@
                         <label for="username">Email</label>
                         <div class="login-input">
                             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5z"/>
-                                <path d="m8 9 4 3 4-3"/>
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
                             </svg>
-                            <input type="email" value="{{ last_username }}" name="_username" id="username" autocomplete="email" required autofocus>
+                            <input type="email" value="{{ last_username }}" name="_username" id="username" autocomplete="email" placeholder="Votre email" required autofocus>
                         </div>
                     </div>
+
                     <div class="login-field">
                         <label for="password">Mot de passe</label>
-                        <div class="login-input">
+                        <div class="login-input login-input--password">
                             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <rect x="5" y="11" width="14" height="10" rx="2"/>
                                 <path d="M8 11V8a4 4 0 0 1 8 0v3"/>
                             </svg>
-                            <input type="password" name="_password" id="password" autocomplete="current-password" required>
+                            <input type="password" name="_password" id="password" autocomplete="current-password" placeholder="Votre mot de passe" required>
+                            <button class="login-password-toggle" type="button" data-password-toggle aria-label="Afficher le mot de passe" aria-pressed="false">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
                         </div>
                     </div>
-                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-                    <div class="login-actions">
-                        <a class="login-forgot" href="{{ path('app_forgot_password') }}">Mot de passe oublié&nbsp;?</a>
-                    </div>
-                    <button class="login-submit" type="submit">Se connecter</button>
-                </form>
 
-                <div class="login-note">
-                    L'accès est réservé aux utilisateurs autorisés. Les actions importantes sont historisées pour assurer le suivi des courriers.
-                </div>
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+                    <div class="login-links">
+                        <a href="{{ path('app_forgot_password') }}">Mot de passe oublié&nbsp;?</a>
+                        <button type="button" data-account-request>Créer un compte</button>
+                    </div>
+
+                    <button class="login-submit" type="submit">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                            <path d="M10 17l5-5-5-5"/>
+                            <path d="M15 12H3"/>
+                        </svg>
+                        <span>Se connecter</span>
+                    </button>
+                </form>
             </div>
         </div>
     </section>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggle = document.querySelector('[data-password-toggle]');
+            const password = document.querySelector('#password');
+
+            if (toggle && password) {
+                toggle.addEventListener('click', () => {
+                    const isVisible = password.type === 'text';
+                    password.type = isVisible ? 'password' : 'text';
+                    toggle.setAttribute('aria-pressed', isVisible ? 'false' : 'true');
+                    toggle.setAttribute('aria-label', isVisible ? 'Afficher le mot de passe' : 'Masquer le mot de passe');
+                });
+            }
+
+            document.querySelector('[data-account-request]')?.addEventListener('click', () => {
+                window.alert('Veuillez contacter un administrateur pour la création de votre compte.');
+            });
+        });
+    </script>
 {% endblock %}
