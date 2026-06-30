@@ -143,7 +143,7 @@ class CourrierType extends AbstractType
                 'required' => false,
                 'constraints' => [
                     new File(
-                        maxSize: '10M',
+                        maxSize: '50M',
                         mimeTypes: ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'],
                         mimeTypesMessage: 'Ajoutez un PDF ou une image valide.',
                     ),
