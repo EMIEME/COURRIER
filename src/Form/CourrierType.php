@@ -96,6 +96,10 @@ class CourrierType extends AbstractType
             ])
             ->add('subject', TextType::class, [
                 'label' => 'Objet',
+                'help' => '500 caractères maximum.',
+                'attr' => [
+                    'maxlength' => 500,
+                ],
             ])
             ->add('localisation', ChoiceType::class, [
                 'label' => 'Localisation',

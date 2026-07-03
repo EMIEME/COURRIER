@@ -71,8 +71,9 @@ class Courrier
     #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'replyTo')]
     private Collection $replies;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 500)]
     #[Assert\NotBlank]
+    #[Assert\Length(max: 500, maxMessage: 'L\'objet ne peut pas dépasser {{ limit }} caractères.')]
     private ?string $subject = null;
 
     #[ORM\Column(length: 160, nullable: true)]
