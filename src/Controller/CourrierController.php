@@ -15,7 +15,9 @@ use App\Service\CourrierListProvider;
 use App\Service\CourrierUrgencyUpdater;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -166,7 +168,19 @@ class CourrierController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $courrier->setCreatedBy($this->getUser());
             $this->normalizeContactsByDirection($courrier);
-            $this->handleUpload($form->get('attachment')->getData(), $courrier);
+
+            try {
+                $this->handleUpload($form->get('attachment')->getData(), $courrier);
+            } catch (FileException $exception) {
+                $form->get('attachment')->addError(new FormError('La pièce jointe n\'a pas pu être enregistrée. Vérifiez la taille du fichier ou réessayez plus tard.'));
+
+                return $this->render('courrier/form.html.twig', [
+                    'courrier' => $courrier,
+                    'form' => $form,
+                    'title' => 'Nouveau courrier',
+                    'button_label' => 'Enregistrer',
+                ]);
+            }
 
             $entityManager->persist($courrier);
             $this->recordAction($entityManager, $courrier, CourrierAction::TYPE_CREATED, 'Courrier créé', sprintf('Référence: %s', $courrier->getReference()));
@@ -246,7 +260,20 @@ class CourrierController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->normalizeContactsByDirection($courrier);
-            $uploadedNewAttachment = $this->handleUpload($form->get('attachment')->getData(), $courrier);
+
+            try {
+                $uploadedNewAttachment = $this->handleUpload($form->get('attachment')->getData(), $courrier);
+            } catch (FileException $exception) {
+                $form->get('attachment')->addError(new FormError('La pièce jointe n\'a pas pu être enregistrée. Vérifiez la taille du fichier ou réessayez plus tard.'));
+
+                return $this->render('courrier/form.html.twig', [
+                    'courrier' => $courrier,
+                    'form' => $form,
+                    'title' => 'Modifier le courrier',
+                    'button_label' => 'Mettre à jour',
+                ]);
+            }
+
             if (!$uploadedNewAttachment) {
                 $attachmentMoveWarning = $this->relocateAttachmentAfterMetadataChange($courrier, $before);
                 if ($attachmentMoveWarning) {
@@ -459,8 +486,12 @@ class CourrierController extends AbstractController
         $attachmentPath = $this->buildAttachmentPath($file, $courrier);
         $targetDirectory = $this->uploadsBaseDirectory().DIRECTORY_SEPARATOR.dirname($attachmentPath);
 
-        if (!is_dir($targetDirectory)) {
-            mkdir($targetDirectory, 0755, true);
+        if (!is_dir($targetDirectory) && !@mkdir($targetDirectory, 0755, true) && !is_dir($targetDirectory)) {
+            throw new FileException('Le dossier de destination de la pièce jointe n\'a pas pu être créé.');
+        }
+
+        if (!is_writable($targetDirectory)) {
+            throw new FileException('Le dossier de destination de la pièce jointe n\'est pas accessible en écriture.');
         }
 
         $file->move($targetDirectory, basename($attachmentPath));

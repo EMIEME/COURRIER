@@ -10,6 +10,7 @@ use App\Repository\CourrierActionRepository;
 use App\Repository\CourrierRepository;
 use App\Repository\InAppNotificationRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 
 class InAppNotificationProvider
@@ -22,6 +23,7 @@ class InAppNotificationProvider
         private readonly InAppNotificationRepository $notificationRepository,
         private readonly EntityManagerInterface $entityManager,
         private readonly Security $security,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -46,15 +48,24 @@ class InAppNotificationProvider
             return ['count' => 0, 'items' => []];
         }
 
-        $this->syncGeneratedNotifications($user, $this->buildGeneratedNotifications($user));
+        try {
+            $this->syncGeneratedNotifications($user, $this->buildGeneratedNotifications($user));
 
-        return [
-            'count' => $this->notificationRepository->countUnreadForUser($user),
-            'items' => array_map(
-                fn (InAppNotification $notification): array => $this->toViewItem($notification),
-                $this->notificationRepository->findActiveForUser($user)
-            ),
-        ];
+            return [
+                'count' => $this->notificationRepository->countUnreadForUser($user),
+                'items' => array_map(
+                    fn (InAppNotification $notification): array => $this->toViewItem($notification),
+                    $this->notificationRepository->findActiveForUser($user)
+                ),
+            ];
+        } catch (\Throwable $exception) {
+            $this->logger->error('Impossible de charger les notifications internes.', [
+                'user_id' => $user->getId(),
+                'exception' => $exception,
+            ]);
+
+            return ['count' => 0, 'items' => []];
+        }
     }
 
     /**
