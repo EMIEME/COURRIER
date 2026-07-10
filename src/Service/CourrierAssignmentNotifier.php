@@ -145,6 +145,7 @@ class CourrierAssignmentNotifier
             sprintf('Date du courrier: %s', $this->formatDate($courrier->getMailDate())),
             sprintf('Interlocuteur: %s', $courrier->getInterlocuteurLabel()),
             sprintf('Échéance de réponse: %s', $this->formatDate($courrier->getResponseDueAt())),
+            sprintf('Suivi / réponse: %s', $this->formatResponseNotes($courrier)),
             '',
             'Voir le service Courrier pour toute information complémentaire.',
         ];
@@ -157,7 +158,7 @@ class CourrierAssignmentNotifier
         $escape = static fn (?string $value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
         return sprintf(
-            '<p>Bonjour %s,</p><p>Un courrier nécessitant une réponse vous a été imputé.</p><ul><li><strong>Référence:</strong> %s</li><li><strong>Objet:</strong> %s</li><li><strong>Nature:</strong> %s</li><li><strong>Date du courrier:</strong> %s</li><li><strong>Interlocuteur:</strong> %s</li><li><strong>Échéance de réponse:</strong> %s</li></ul><p>Voir le service Courrier pour toute information complémentaire.</p>',
+            '<p>Bonjour %s,</p><p>Un courrier nécessitant une réponse vous a été imputé.</p><ul><li><strong>Référence:</strong> %s</li><li><strong>Objet:</strong> %s</li><li><strong>Nature:</strong> %s</li><li><strong>Date du courrier:</strong> %s</li><li><strong>Interlocuteur:</strong> %s</li><li><strong>Échéance de réponse:</strong> %s</li><li><strong>Suivi / réponse:</strong> %s</li></ul><p>Voir le service Courrier pour toute information complémentaire.</p>',
             $escape($recipient->getFullName() ?: $recipient->getEmail()),
             $escape($courrier->getReference()),
             $escape($courrier->getSubject()),
@@ -165,12 +166,19 @@ class CourrierAssignmentNotifier
             $escape($this->formatDate($courrier->getMailDate())),
             $escape($courrier->getInterlocuteurLabel()),
             $escape($this->formatDate($courrier->getResponseDueAt())),
-            $escape($url),
+            nl2br($escape($this->formatResponseNotes($courrier))),
         );
     }
 
     private function formatDate(?\DateTimeInterface $date): string
     {
         return $date?->format('d/m/Y') ?? 'Non renseignée';
+    }
+
+    private function formatResponseNotes(Courrier $courrier): string
+    {
+        $responseNotes = trim((string) $courrier->getResponseNotes());
+
+        return '' !== $responseNotes ? $responseNotes : 'Non renseigné';
     }
 }
