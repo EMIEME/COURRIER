@@ -939,6 +939,14 @@
                 .form-section__header p { margin-top: 4px; }
                 .courrier-form-panel .form-grid { gap: 16px; }
                 .is-hidden { display: none !important; }
+                .visually-hidden {
+                    position: absolute !important;
+                    width: 1px;
+                    height: 1px;
+                    overflow: hidden;
+                    clip: rect(0 0 0 0);
+                    white-space: nowrap;
+                }
                 label { color: #293a46; display: block; font-weight: 750; margin-bottom: 7px; }
                 input, select, textarea {
                     width: 100%;
@@ -1595,7 +1603,7 @@
                     color: #fff;
                     display: flex;
                     flex-direction: column;
-                    justify-content: space-between;
+                    justify-content: center;
                     min-height: 100%;
                     overflow: hidden;
                     padding: clamp(26px, 3.2vw, 42px);
@@ -1620,7 +1628,13 @@
                 .login-brand {
                     align-items: center;
                     display: flex;
-                    gap: 14px;
+                    flex-direction: column;
+                    gap: 18px;
+                    justify-content: center;
+                    margin: auto;
+                    max-width: 360px;
+                    text-align: center;
+                    width: 100%;
                 }
                 .login-brand__mark {
                     align-items: center;
@@ -1628,11 +1642,11 @@
                     border-radius: 8px;
                     box-shadow: 0 8px 22px rgba(7, 45, 37, 0.12);
                     display: inline-flex;
-                    flex: 0 0 clamp(58px, 5vw, 72px);
-                    height: clamp(58px, 5vw, 72px);
+                    flex: 0 0 clamp(78px, 7vw, 98px);
+                    height: clamp(78px, 7vw, 98px);
                     justify-content: center;
                     overflow: hidden;
-                    padding: 9px;
+                    padding: 12px;
                 }
                 .login-brand__mark img {
                     display: block;
@@ -1640,19 +1654,27 @@
                     object-fit: contain;
                     width: 142%;
                 }
+                .login-brand__text {
+                    display: grid;
+                    gap: 10px;
+                    justify-items: center;
+                }
                 .login-brand strong {
                     color: #fff;
                     display: block;
-                    font-size: clamp(20px, 2vw, 26px);
+                    font-size: clamp(28px, 3.4vw, 42px);
                     font-weight: 850;
-                    line-height: 1.08;
+                    line-height: 1.02;
+                    text-shadow: 0 2px 18px rgba(0, 0, 0, 0.32);
                 }
                 .login-brand small {
                     color: rgba(255, 255, 255, 0.86);
-                    display: block;
-                    font-size: clamp(12px, 1.2vw, 15px);
+                    display: inline-flex;
+                    font-size: clamp(13px, 1.2vw, 16px);
                     font-weight: 700;
-                    margin-top: 10px;
+                    justify-content: center;
+                    letter-spacing: 0;
+                    padding-top: 2px;
                 }
                 .login-visual__features {
                     display: grid;
@@ -2004,8 +2026,31 @@
                         min-height: 0;
                     }
                     .login-visual {
-                        min-height: 360px;
-                        padding: 28px;
+                        min-height: 220px;
+                        padding: 24px;
+                    }
+                    .login-brand {
+                        flex-direction: row;
+                        gap: 14px;
+                        max-width: 420px;
+                        text-align: left;
+                    }
+                    .login-brand__mark {
+                        flex-basis: 68px;
+                        height: 68px;
+                        padding: 9px;
+                    }
+                    .login-brand__text {
+                        gap: 6px;
+                        justify-items: start;
+                    }
+                    .login-brand strong {
+                        font-size: 30px;
+                        line-height: 1.05;
+                    }
+                    .login-brand small {
+                        font-size: 15px;
+                        justify-content: flex-start;
                     }
                     .login-panel {
                         padding: 30px 24px 34px;
