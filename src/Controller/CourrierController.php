@@ -56,7 +56,7 @@ class CourrierController extends AbstractController
             'isPendingDeletionView' => !empty($filters['pendingDeletion']),
             'pendingDeletionCount' => $this->isGranted('ROLE_ADMIN') ? $courrierRepository->countPendingDeletion() : 0,
             'selectedDestinataire' => $filters['destinataire'] ?? null,
-            'selectedAssignedUser' => $filters['assignedTo'] instanceof User ? $filters['assignedTo'] : null,
+            'selectedAssignedUsers' => $this->assignedUsersFromFilter($filters['assignedTo'] ?? null),
             'statuses' => $listProvider->statusChoices(),
             'directions' => $listProvider->natureChoices(),
             'statusLabels' => $listProvider->statusLabels(),
@@ -108,7 +108,7 @@ class CourrierController extends AbstractController
             'isPendingDeletionView' => false,
             'pendingDeletionCount' => 0,
             'selectedDestinataire' => $filters['destinataire'] ?? null,
-            'selectedAssignedUser' => null,
+            'selectedAssignedUsers' => [],
             'statuses' => $listProvider->statusChoices(),
             'directions' => $listProvider->natureChoices(),
             'statusLabels' => $listProvider->statusLabels(),
@@ -682,27 +682,106 @@ class CourrierController extends AbstractController
      */
     private function buildSearchFilters(Request $request, UserRepository $userRepository, DestinataireRepository $destinataireRepository): array
     {
-        $assignedTo = null;
-        if ($request->query->get('assignedTo')) {
-            $assignedTo = $userRepository->find((int) $request->query->get('assignedTo'));
-        }
+        $query = $request->query->all();
+        $assignedTo = $this->findUsersFromQuery($query, 'assignedTo', $userRepository);
 
         $destinataire = null;
-        if ($request->query->get('destinataire')) {
-            $destinataire = $destinataireRepository->find((int) $request->query->get('destinataire'));
+        if ($destinataireId = $this->queryScalar($query, 'destinataire')) {
+            $destinataire = $destinataireRepository->find((int) $destinataireId);
         }
 
         return [
-            'query' => $request->query->get('q'),
-            'sender' => $request->query->get('sender'),
-            'status' => $request->query->get('status'),
-            'direction' => $request->query->get('direction'),
-            'dateFrom' => $request->query->get('dateFrom'),
-            'dateTo' => $request->query->get('dateTo'),
+            'query' => $this->queryScalar($query, 'q'),
+            'sender' => $this->queryScalar($query, 'sender'),
+            'status' => $query['status'] ?? null,
+            'direction' => $query['direction'] ?? null,
+            'dateFrom' => $this->queryScalar($query, 'dateFrom'),
+            'dateTo' => $this->queryScalar($query, 'dateTo'),
             'assignedTo' => $assignedTo,
             'destinataire' => $destinataire,
             'pendingDeletion' => $this->isGranted('ROLE_ADMIN') && $request->query->getBoolean('pendingDeletion'),
         ];
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     *
+     * @return list<User>
+     */
+    private function findUsersFromQuery(array $query, string $key, UserRepository $userRepository): array
+    {
+        $users = [];
+        $seen = [];
+
+        foreach ($this->queryList($query, $key) as $userId) {
+            $userId = (int) $userId;
+            if ($userId <= 0 || isset($seen[$userId])) {
+                continue;
+            }
+
+            $user = $userRepository->find($userId);
+            if ($user instanceof User) {
+                $users[] = $user;
+                $seen[$userId] = true;
+            }
+        }
+
+        return $users;
+    }
+
+    /**
+     * @return list<User>
+     */
+    private function assignedUsersFromFilter(mixed $value): array
+    {
+        if ($value instanceof User) {
+            return [$value];
+        }
+
+        if (!is_array($value)) {
+            return [];
+        }
+
+        return array_values(array_filter($value, static fn (mixed $item): bool => $item instanceof User));
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function queryScalar(array $query, string $key): ?string
+    {
+        if (!isset($query[$key]) || !is_scalar($query[$key])) {
+            return null;
+        }
+
+        return (string) $query[$key];
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     *
+     * @return list<string>
+     */
+    private function queryList(array $query, string $key): array
+    {
+        $value = $query[$key] ?? [];
+        if (!is_array($value)) {
+            $value = [$value];
+        }
+
+        $values = [];
+        foreach ($value as $item) {
+            if (!is_scalar($item)) {
+                continue;
+            }
+
+            $item = trim((string) $item);
+            if ('' !== $item) {
+                $values[] = $item;
+            }
+        }
+
+        return array_values(array_unique($values));
     }
 
     private function recordAction(EntityManagerInterface $entityManager, Courrier $courrier, string $type, string $summary, ?string $details = null): void

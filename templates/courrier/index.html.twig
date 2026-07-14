@@ -11,7 +11,10 @@
     {% set showPendingDeletionActions = showPendingDeletionActions is defined ? showPendingDeletionActions : true %}
     {% set isMineView = isMineView is defined ? isMineView : false %}
     {% set isPendingDeletionView = isPendingDeletionView is defined ? isPendingDeletionView : false %}
-    {% set selectedAssignedUser = selectedAssignedUser|default(null) %}
+    {% set selectedAssignedUsers = selectedAssignedUsers|default([]) %}
+    {% set selectedStatuses = filters.status is defined and filters.status is iterable ? filters.status : (filters.status|default('') ? [filters.status] : []) %}
+    {% set selectedDirections = filters.direction is defined and filters.direction is iterable ? filters.direction : (filters.direction|default('') ? [filters.direction] : []) %}
+    {% set selectedAssignedToIds = filters.assignedTo is defined and filters.assignedTo is iterable ? filters.assignedTo : (filters.assignedTo|default('') ? [filters.assignedTo] : []) %}
 
     <div class="topbar page-band">
         <div>
@@ -55,15 +58,15 @@
     {% set activeFilterParams = {
         q: filters.q|default(''),
         sender: filters.sender|default(''),
-        status: filters.status|default(''),
-        direction: filters.direction|default(''),
+        status: selectedStatuses,
+        direction: selectedDirections,
         dateFrom: filters.dateFrom|default(''),
         dateTo: filters.dateTo|default(''),
-        assignedTo: showAssignedFilter ? filters.assignedTo|default('') : '',
+        assignedTo: showAssignedFilter ? selectedAssignedToIds : [],
         destinataire: filters.destinataire|default(''),
         pendingDeletion: filters.pendingDeletion|default('')
     } %}
-    {% set hasAdvancedFilters = filters.sender|default('') or filters.status|default('') or filters.direction|default('') or filters.dateFrom|default('') or filters.dateTo|default('') or (showAssignedFilter and filters.assignedTo|default('')) %}
+    {% set hasAdvancedFilters = filters.sender|default('') or selectedStatuses|length > 0 or selectedDirections|length > 0 or filters.dateFrom|default('') or filters.dateTo|default('') or (showAssignedFilter and selectedAssignedToIds|length > 0) %}
     {% set hasActiveFilters = filters.q|default('') or hasAdvancedFilters or filters.destinataire|default('') or filters.pendingDeletion|default('') %}
 
     <form class="form-panel filter-panel" method="get" action="{{ path(listRoute) }}">
@@ -94,19 +97,17 @@
                 </div>
                 <div>
                     <label for="status">Statut</label>
-                    <select id="status" name="status">
-                        <option value="">Tous</option>
+                    <select id="status" name="status[]" class="sr-only-select" data-autocomplete-select="true" data-autocomplete-show-all="true" data-placeholder="Tous les statuts" multiple>
                         {% for label, value in statuses %}
-                            <option value="{{ value }}" {{ filters.status|default('') == value ? 'selected' : '' }}>{{ label }}</option>
+                            <option value="{{ value }}" {{ value in selectedStatuses ? 'selected' : '' }}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div>
                     <label for="direction">Nature</label>
-                    <select id="direction" name="direction">
-                        <option value="">Toutes</option>
+                    <select id="direction" name="direction[]" class="sr-only-select" data-autocomplete-select="true" data-autocomplete-show-all="true" data-placeholder="Toutes les natures" multiple>
                         {% for label, value in directions %}
-                            <option value="{{ value }}" {{ filters.direction|default('') == value ? 'selected' : '' }}>{{ label }}</option>
+                            <option value="{{ value }}" {{ value in selectedDirections ? 'selected' : '' }}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -121,10 +122,9 @@
                 {% if showAssignedFilter %}
                     <div>
                         <label for="assignedTo">Imputer à</label>
-                        <select id="assignedTo" name="assignedTo">
-                            <option value="">Tous</option>
+                        <select id="assignedTo" name="assignedTo[]" class="sr-only-select" data-autocomplete-select="true" data-autocomplete-show-all="true" data-placeholder="Toutes les imputations" multiple>
                             {% for user in users %}
-                                <option value="{{ user.id }}" {{ filters.assignedTo|default('') == user.id ? 'selected' : '' }}>{{ user.fullName }}</option>
+                                <option value="{{ user.id }}" {{ user.id in selectedAssignedToIds ? 'selected' : '' }}>{{ user.fullName }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -146,17 +146,21 @@
                         <a class="filter-chip__remove" href="{{ path(listRoute, activeFilterParams|merge({sender: ''})) }}" aria-label="Retirer le filtre interlocuteur">×</a>
                     </span>
                 {% endif %}
-                {% if filters.status|default('') %}
-                    <span class="filter-chip">
-                        {{ statusLabels[filters.status]|default(filters.status) }}
-                        <a class="filter-chip__remove" href="{{ path(listRoute, activeFilterParams|merge({status: ''})) }}" aria-label="Retirer le filtre statut">×</a>
-                    </span>
+                {% if selectedStatuses|length > 0 %}
+                    {% for status in selectedStatuses %}
+                        <span class="filter-chip">
+                            {{ statusLabels[status]|default(status) }}
+                            <a class="filter-chip__remove" href="{{ path(listRoute, activeFilterParams|merge({status: selectedStatuses|filter(value => value != status)})) }}" aria-label="Retirer le filtre statut">×</a>
+                        </span>
+                    {% endfor %}
                 {% endif %}
-                {% if filters.direction|default('') %}
-                    <span class="filter-chip">
-                        {{ directionLabels[filters.direction]|default(filters.direction) }}
-                        <a class="filter-chip__remove" href="{{ path(listRoute, activeFilterParams|merge({direction: ''})) }}" aria-label="Retirer le filtre nature">×</a>
-                    </span>
+                {% if selectedDirections|length > 0 %}
+                    {% for direction in selectedDirections %}
+                        <span class="filter-chip">
+                            {{ directionLabels[direction]|default(direction) }}
+                            <a class="filter-chip__remove" href="{{ path(listRoute, activeFilterParams|merge({direction: selectedDirections|filter(value => value != direction)})) }}" aria-label="Retirer le filtre nature">×</a>
+                        </span>
+                    {% endfor %}
                 {% endif %}
                 {% if filters.dateFrom|default('') or filters.dateTo|default('') %}
                     <span class="filter-chip">
@@ -170,11 +174,13 @@
                         <a class="filter-chip__remove" href="{{ path(listRoute, activeFilterParams|merge({dateFrom: '', dateTo: ''})) }}" aria-label="Retirer le filtre période">×</a>
                     </span>
                 {% endif %}
-                {% if showAssignedFilter and selectedAssignedUser %}
-                    <span class="filter-chip">
-                        Imputé à: {{ selectedAssignedUser.fullName }}
-                        <a class="filter-chip__remove" href="{{ path(listRoute, activeFilterParams|merge({assignedTo: ''})) }}" aria-label="Retirer le filtre imputation">×</a>
-                    </span>
+                {% if showAssignedFilter and selectedAssignedUsers|length > 0 %}
+                    {% for assignedUser in selectedAssignedUsers %}
+                        <span class="filter-chip">
+                            Imputé à: {{ assignedUser.fullName }}
+                            <a class="filter-chip__remove" href="{{ path(listRoute, activeFilterParams|merge({assignedTo: selectedAssignedToIds|filter(value => value != assignedUser.id)})) }}" aria-label="Retirer le filtre imputation">×</a>
+                        </span>
+                    {% endfor %}
                 {% endif %}
                 {% if selectedDestinataire %}
                     <span class="filter-chip">
@@ -214,11 +220,11 @@
     {% set paginationParams = filters|merge({
         q: filters.q|default(''),
         sender: filters.sender|default(''),
-        status: filters.status|default(''),
-        direction: filters.direction|default(''),
+        status: selectedStatuses,
+        direction: selectedDirections,
         dateFrom: filters.dateFrom|default(''),
         dateTo: filters.dateTo|default(''),
-        assignedTo: filters.assignedTo|default(''),
+        assignedTo: selectedAssignedToIds,
         destinataire: filters.destinataire|default(''),
         pendingDeletion: filters.pendingDeletion|default('')
     }) %}

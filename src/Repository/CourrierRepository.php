@@ -107,19 +107,28 @@ class CourrierRepository extends ServiceEntityRepository
                 ->setParameter('sender', '%'.mb_strtolower((string) $filters['sender']).'%');
         }
 
-        if (!empty($filters['status'])) {
-            $qb->andWhere('c.status = :status')
-                ->setParameter('status', $filters['status']);
+        $statuses = $this->normalizeListFilter($filters['status'] ?? null);
+        if ($statuses) {
+            $qb->andWhere('c.status IN (:statuses)')
+                ->setParameter('statuses', $statuses);
         }
 
-        if (!empty($filters['direction'])) {
-            $qb->andWhere('c.direction = :direction')
-                ->setParameter('direction', $filters['direction']);
+        $directions = $this->normalizeListFilter($filters['direction'] ?? null);
+        if ($directions) {
+            $qb->andWhere('c.direction IN (:directions)')
+                ->setParameter('directions', $directions);
         }
 
-        if (!empty($filters['assignedTo']) && $filters['assignedTo'] instanceof User) {
-            $qb->andWhere(':assignedTo MEMBER OF c.assignedTo')
-                ->setParameter('assignedTo', $filters['assignedTo']);
+        $assignedUsers = $this->normalizeUserFilter($filters['assignedTo'] ?? null);
+        if ($assignedUsers) {
+            $assignedUserFilter = $qb->expr()->orX();
+            foreach ($assignedUsers as $index => $assignedUser) {
+                $parameterName = 'assignedTo'.$index;
+                $assignedUserFilter->add(':'.$parameterName.' MEMBER OF c.assignedTo');
+                $qb->setParameter($parameterName, $assignedUser);
+            }
+
+            $qb->andWhere($assignedUserFilter);
         }
 
         if (!empty($filters['destinataire']) && $filters['destinataire'] instanceof Destinataire) {
@@ -138,6 +147,53 @@ class CourrierRepository extends ServiceEntityRepository
         }
 
         return $qb;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function normalizeListFilter(mixed $value): array
+    {
+        if (!is_array($value)) {
+            $value = [$value];
+        }
+
+        $values = [];
+        foreach ($value as $item) {
+            if (!is_scalar($item)) {
+                continue;
+            }
+
+            $item = trim((string) $item);
+            if ('' !== $item) {
+                $values[] = $item;
+            }
+        }
+
+        return array_values(array_unique($values));
+    }
+
+    /**
+     * @return list<User>
+     */
+    private function normalizeUserFilter(mixed $value): array
+    {
+        if ($value instanceof User) {
+            return [$value];
+        }
+
+        if (!is_array($value)) {
+            return [];
+        }
+
+        $users = [];
+        foreach ($value as $item) {
+            if ($item instanceof User) {
+                $users[] = $item;
+            }
+        }
+
+        return $users;
     }
 
     public function countLinkedToDestinataire(Destinataire $destinataire): int

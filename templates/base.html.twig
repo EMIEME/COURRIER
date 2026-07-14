@@ -2251,6 +2251,7 @@
 
                         const options = Array.from(select.options).filter((option) => option.value);
                         const normalize = (value) => value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                        const showAllOnFocus = select.dataset.autocompleteShowAll === 'true';
 
                         const selectedOptions = () => options.filter((option) => option.selected);
 
@@ -2280,7 +2281,7 @@
 
                         const renderResults = () => {
                             const query = normalize(input.value.trim());
-                            if (!query) {
+                            if (!query && !showAllOnFocus) {
                                 results.innerHTML = '';
                                 results.classList.remove('is-open');
 
@@ -2289,7 +2290,7 @@
 
                             const matches = options
                                 .filter((option) => !option.selected)
-                                .filter((option) => normalize(option.textContent).includes(query))
+                                .filter((option) => !query || normalize(option.textContent).includes(query))
                                 .slice(0, 8);
 
                             results.innerHTML = '';
