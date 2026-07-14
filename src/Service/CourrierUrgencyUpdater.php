@@ -12,6 +12,7 @@ class CourrierUrgencyUpdater
     public function __construct(
         private readonly CourrierRepository $courrierRepository,
         private readonly EntityManagerInterface $entityManager,
+        private readonly CourrierAssignmentNotifier $assignmentNotifier,
     ) {
     }
 
@@ -19,14 +20,20 @@ class CourrierUrgencyUpdater
     {
         $today = $today ? \DateTimeImmutable::createFromInterface($today) : new \DateTimeImmutable('today');
         $updated = 0;
+        $updatedCourriers = [];
 
         foreach ($this->courrierRepository->findOverdueInProgress($today) as $courrier) {
             $this->markAsUrgent($courrier);
+            $updatedCourriers[] = $courrier;
             ++$updated;
         }
 
         if ($updated > 0) {
             $this->entityManager->flush();
+
+            foreach ($updatedCourriers as $courrier) {
+                $this->assignmentNotifier->notifyUrgentStatus($courrier, $courrier->getAssignedTo());
+            }
         }
 
         return $updated;

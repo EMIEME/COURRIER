@@ -157,6 +157,8 @@ class CourrierRepository extends ServiceEntityRepository
     public function findOverdueInProgress(\DateTimeInterface $today): array
     {
         return $this->createQueryBuilder('c')
+            ->leftJoin('c.assignedTo', 'assignedTo')
+            ->addSelect('assignedTo')
             ->andWhere('c.status = :status')
             ->andWhere('c.responseDueAt IS NOT NULL')
             ->andWhere('c.responseDueAt < :today')
