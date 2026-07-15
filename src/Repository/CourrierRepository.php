@@ -15,6 +15,18 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class CourrierRepository extends ServiceEntityRepository
 {
+    public const DUE_FILTER_OVERDUE = 'overdue';
+    public const DUE_FILTER_TODAY = 'today';
+    public const DUE_FILTER_NEXT_7_DAYS = 'next_7_days';
+    public const DUE_FILTER_NONE = 'none';
+
+    public const DUE_FILTERS = [
+        self::DUE_FILTER_OVERDUE,
+        self::DUE_FILTER_TODAY,
+        self::DUE_FILTER_NEXT_7_DAYS,
+        self::DUE_FILTER_NONE,
+    ];
+
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Courrier::class);
@@ -146,6 +158,24 @@ class CourrierRepository extends ServiceEntityRepository
                 ->setParameter('dateTo', new \DateTimeImmutable((string) $filters['dateTo']), Types::DATE_IMMUTABLE);
         }
 
+        $dueFilter = $this->normalizeDueFilter($filters['dueFilter'] ?? null);
+        if (self::DUE_FILTER_OVERDUE === $dueFilter) {
+            $qb->andWhere('c.responseDueAt IS NOT NULL')
+                ->andWhere('c.responseDueAt < :dueToday')
+                ->setParameter('dueToday', new \DateTimeImmutable('today'), Types::DATE_IMMUTABLE);
+        } elseif (self::DUE_FILTER_TODAY === $dueFilter) {
+            $qb->andWhere('c.responseDueAt = :dueToday')
+                ->setParameter('dueToday', new \DateTimeImmutable('today'), Types::DATE_IMMUTABLE);
+        } elseif (self::DUE_FILTER_NEXT_7_DAYS === $dueFilter) {
+            $today = new \DateTimeImmutable('today');
+            $qb->andWhere('c.responseDueAt >= :dueToday')
+                ->andWhere('c.responseDueAt <= :dueLimit')
+                ->setParameter('dueToday', $today, Types::DATE_IMMUTABLE)
+                ->setParameter('dueLimit', $today->modify('+7 days'), Types::DATE_IMMUTABLE);
+        } elseif (self::DUE_FILTER_NONE === $dueFilter) {
+            $qb->andWhere('c.responseDueAt IS NULL');
+        }
+
         return $qb;
     }
 
@@ -194,6 +224,17 @@ class CourrierRepository extends ServiceEntityRepository
         }
 
         return $users;
+    }
+
+    private function normalizeDueFilter(mixed $value): ?string
+    {
+        if (!is_scalar($value)) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        return in_array($value, self::DUE_FILTERS, true) ? $value : null;
     }
 
     public function countLinkedToDestinataire(Destinataire $destinataire): int

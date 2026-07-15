@@ -84,7 +84,7 @@ class InAppNotificationProvider
         $items = [];
         $today = new \DateTimeImmutable('today');
         $recentAssignmentSince = $today->modify('-7 days');
-        $upcomingDueLimit = $today->modify('+3 days');
+        $upcomingDueLimit = $today->modify('+7 days');
 
         $recentAssignmentCount = $this->courrierActionRepository->countRecentAssignmentsForUser($user, $recentAssignmentSince);
         if ($recentAssignmentCount > 0) {
@@ -113,10 +113,10 @@ class InAppNotificationProvider
                 'title' => $this->pluralize($upcomingDueCount, 'Échéance proche', 'Échéances proches'),
                 'message' => $this->formatCourrierList(
                     $this->courrierRepository->findUpcomingDueForUser($user, $today, $upcomingDueLimit),
-                    'dans les 3 prochains jours'
+                    'dans les 7 prochains jours'
                 ),
                 'route' => 'app_courrier_mine',
-                'routeParams' => [],
+                'routeParams' => ['dueFilter' => CourrierRepository::DUE_FILTER_NEXT_7_DAYS],
             ];
         }
 

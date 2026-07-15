@@ -92,6 +92,35 @@ class CourrierAssignmentNotifier
     /**
      * @param iterable<User> $users
      *
+     * @return array{sent: int, failed: int}
+     */
+    public function notifyDeadlineReminder(Courrier $courrier, iterable $users, ?User $sender = null): array
+    {
+        $sent = 0;
+        $failed = 0;
+        $recipients = $this->uniqueRecipients($users);
+
+        foreach ($recipients as $recipient) {
+            try {
+                $this->mailer->send($this->buildReminderEmail($courrier, $recipient, $sender));
+                ++$sent;
+            } catch (\Throwable $exception) {
+                ++$failed;
+                $this->logger->error('Impossible d\'envoyer la relance du courrier.', [
+                    'courrier_id' => $courrier->getId(),
+                    'courrier_reference' => $courrier->getReference(),
+                    'recipient' => $recipient->getEmail(),
+                    'exception' => $exception,
+                ]);
+            }
+        }
+
+        return ['sent' => $sent, 'failed' => $failed];
+    }
+
+    /**
+     * @param iterable<User> $users
+     *
      * @return list<User>
      */
     private function uniqueRecipients(iterable $users): array
@@ -141,6 +170,24 @@ class CourrierAssignmentNotifier
             ->subject(sprintf('Courrier urgent - %s', $courrier->getReference()))
             ->text($this->buildUrgentTextBody($courrier, $recipient, $url))
             ->html($this->buildUrgentHtmlBody($courrier, $recipient, $url));
+
+        if ('' !== trim($this->replyToAddress)) {
+            $email->replyTo(new Address($this->replyToAddress, $this->fromName));
+        }
+
+        return $email;
+    }
+
+    private function buildReminderEmail(Courrier $courrier, User $recipient, ?User $sender): Email
+    {
+        $url = $this->urlGenerator->generate('app_courrier_show', ['id' => $courrier->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
+
+        $email = (new Email())
+            ->from(new Address($this->fromAddress, $this->fromName))
+            ->to(new Address((string) $recipient->getEmail(), $recipient->getFullName() ?: (string) $recipient->getEmail()))
+            ->subject(sprintf('Relance courrier - %s', $courrier->getReference()))
+            ->text($this->buildReminderTextBody($courrier, $recipient, $sender, $url))
+            ->html($this->buildReminderHtmlBody($courrier, $recipient, $sender, $url));
 
         if ('' !== trim($this->replyToAddress)) {
             $email->replyTo(new Address($this->replyToAddress, $this->fromName));
@@ -258,6 +305,58 @@ class CourrierAssignmentNotifier
             $escape($this->formatDate($courrier->getResponseDueAt())),
             nl2br($escape($this->formatResponseNotes($courrier))),
             $escape($url),
+        );
+    }
+
+    private function buildReminderTextBody(Courrier $courrier, User $recipient, ?User $sender, string $url): string
+    {
+        $lines = [
+            sprintf('Bonjour %s,', $recipient->getFullName() ?: $recipient->getEmail()),
+            '',
+            'Ceci est une relance concernant un courrier qui vous est imputé.',
+            '',
+            sprintf('Référence: %s', $courrier->getReference()),
+            sprintf('Objet: %s', $courrier->getSubject()),
+            sprintf('Nature: %s', $courrier->getDirectionLabel()),
+            sprintf('Date du courrier: %s', $this->formatDate($courrier->getMailDate())),
+            sprintf('Interlocuteur: %s', $courrier->getInterlocuteurLabel()),
+            sprintf('Échéance de réponse: %s', $this->formatDate($courrier->getResponseDueAt())),
+            sprintf('Statut: %s', $courrier->getStatusLabel()),
+            sprintf('Suivi / réponse: %s', $this->formatResponseNotes($courrier)),
+            sprintf('Lien: %s', $url),
+        ];
+
+        if ($sender instanceof User) {
+            $lines[] = '';
+            $lines[] = sprintf('Relance envoyée par: %s', $sender->getFullName() ?: $sender->getEmail());
+        }
+
+        $lines[] = '';
+        $lines[] = 'Voir le service Courrier pour toute information complémentaire.';
+
+        return implode("\n", $lines);
+    }
+
+    private function buildReminderHtmlBody(Courrier $courrier, User $recipient, ?User $sender, string $url): string
+    {
+        $escape = static fn (?string $value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $senderLine = $sender instanceof User
+            ? sprintf('<p><strong>Relance envoyée par:</strong> %s</p>', $escape($sender->getFullName() ?: $sender->getEmail()))
+            : '';
+
+        return sprintf(
+            '<p>Bonjour %s,</p><p>Ceci est une relance concernant un courrier qui vous est imputé.</p><ul><li><strong>Référence:</strong> %s</li><li><strong>Objet:</strong> %s</li><li><strong>Nature:</strong> %s</li><li><strong>Date du courrier:</strong> %s</li><li><strong>Interlocuteur:</strong> %s</li><li><strong>Échéance de réponse:</strong> %s</li><li><strong>Statut:</strong> %s</li><li><strong>Suivi / réponse:</strong> %s</li></ul><p><a href="%s">Ouvrir le courrier</a></p>%s<p>Voir le service Courrier pour toute information complémentaire.</p>',
+            $escape($recipient->getFullName() ?: $recipient->getEmail()),
+            $escape($courrier->getReference()),
+            $escape($courrier->getSubject()),
+            $escape($courrier->getDirectionLabel()),
+            $escape($this->formatDate($courrier->getMailDate())),
+            $escape($courrier->getInterlocuteurLabel()),
+            $escape($this->formatDate($courrier->getResponseDueAt())),
+            $escape($courrier->getStatusLabel()),
+            nl2br($escape($this->formatResponseNotes($courrier))),
+            $escape($url),
+            $senderLine,
         );
     }
 

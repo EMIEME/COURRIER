@@ -219,6 +219,14 @@
                             <button type="submit">Mettre à jour le suivi</button>
                         </div>
                     </form>
+                    {% if is_granted('ROLE_COURRIER_EDIT') and courrier.status != 'traite' and courrier.assignedTo|length > 0 %}
+                        <form method="post" action="{{ path('app_courrier_remind', {id: courrier.id}) }}" onsubmit="return confirm('Envoyer une relance aux personnes imputées à ce courrier ?');">
+                            <input type="hidden" name="_token" value="{{ csrf_token('remind' ~ courrier.id) }}">
+                            <div class="workflow-actions">
+                                <button class="secondary" type="submit">Relancer par email</button>
+                            </div>
+                        </form>
+                    {% endif %}
                 {% else %}
                     <p class="muted">Vous pouvez consulter le workflow, mais vous n'avez pas la permission de le modifier.</p>
                     <dl class="detail-list">

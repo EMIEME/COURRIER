@@ -30,6 +30,13 @@ use Symfony\Component\String\Slugger\AsciiSlugger;
 #[Route('/courriers')]
 class CourrierController extends AbstractController
 {
+    private const DUE_FILTER_CHOICES = [
+        'Échéance dépassée' => CourrierRepository::DUE_FILTER_OVERDUE,
+        'Échéance aujourd\'hui' => CourrierRepository::DUE_FILTER_TODAY,
+        'Dans les 7 prochains jours' => CourrierRepository::DUE_FILTER_NEXT_7_DAYS,
+        'Sans échéance' => CourrierRepository::DUE_FILTER_NONE,
+    ];
+
     #[Route('', name: 'app_courrier_index', methods: ['GET'])]
     #[IsGranted('ROLE_COURRIER_VIEW')]
     public function index(Request $request, CourrierRepository $courrierRepository, UserRepository $userRepository, DestinataireRepository $destinataireRepository, CourrierListProvider $listProvider, CourrierUrgencyUpdater $urgencyUpdater): Response
@@ -59,6 +66,8 @@ class CourrierController extends AbstractController
             'selectedAssignedUsers' => $this->assignedUsersFromFilter($filters['assignedTo'] ?? null),
             'statuses' => $listProvider->statusChoices(),
             'directions' => $listProvider->natureChoices(),
+            'dueFilters' => self::DUE_FILTER_CHOICES,
+            'dueFilterLabels' => $this->dueFilterLabels(),
             'statusLabels' => $listProvider->statusLabels(),
             'directionLabels' => $listProvider->natureLabels(),
             'users' => $userRepository->findAssignableUsers(),
@@ -111,6 +120,8 @@ class CourrierController extends AbstractController
             'selectedAssignedUsers' => [],
             'statuses' => $listProvider->statusChoices(),
             'directions' => $listProvider->natureChoices(),
+            'dueFilters' => self::DUE_FILTER_CHOICES,
+            'dueFilterLabels' => $this->dueFilterLabels(),
             'statusLabels' => $listProvider->statusLabels(),
             'directionLabels' => $listProvider->natureLabels(),
             'users' => $userRepository->findAssignableUsers(),
@@ -385,6 +396,57 @@ class CourrierController extends AbstractController
         $this->notifyAssignmentIfNeeded($assignmentNotifier, $courrier, $usersToNotify);
 
         $this->addFlash('success', 'Le suivi du courrier a été mis à jour.');
+
+        return $this->redirectToRoute('app_courrier_show', ['id' => $courrier->getId()]);
+    }
+
+    #[Route('/{id}/relancer', name: 'app_courrier_remind', methods: ['POST'])]
+    #[IsGranted('ROLE_COURRIER_EDIT')]
+    public function remind(Request $request, Courrier $courrier, EntityManagerInterface $entityManager, CourrierAssignmentNotifier $assignmentNotifier): RedirectResponse
+    {
+        $this->denyAccessToPendingDeletion($courrier, true);
+
+        if (!$this->isCsrfTokenValid('remind'.$courrier->getId(), (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if (Courrier::STATUS_TRAITE === $courrier->getStatus()) {
+            $this->addFlash('error', 'Un courrier traité ne nécessite pas de relance.');
+
+            return $this->redirectToRoute('app_courrier_show', ['id' => $courrier->getId()]);
+        }
+
+        if ($courrier->getAssignedTo()->isEmpty()) {
+            $this->addFlash('error', 'Aucune relance envoyée: le courrier n\'est imputé à personne.');
+
+            return $this->redirectToRoute('app_courrier_show', ['id' => $courrier->getId()]);
+        }
+
+        $result = $assignmentNotifier->notifyDeadlineReminder($courrier, $courrier->getAssignedTo(), $this->getCurrentUser());
+        $details = [
+            sprintf('Destinataires: %s', $courrier->getAssignedToLabel()),
+            sprintf('Échéance: %s', $courrier->getResponseDueAt()?->format('d/m/Y') ?? 'Non renseignée'),
+            sprintf('Statut: %s', $courrier->getStatusLabel()),
+            sprintf('Emails envoyés: %d', $result['sent']),
+            sprintf('Échecs: %d', $result['failed']),
+        ];
+
+        $this->recordAction(
+            $entityManager,
+            $courrier,
+            CourrierAction::TYPE_REMINDER_SENT,
+            'Relance envoyée',
+            implode("\n", $details)
+        );
+        $entityManager->flush();
+
+        if ($result['sent'] > 0) {
+            $this->addFlash('success', sprintf('%d relance(s) email envoyée(s).', $result['sent']));
+        }
+
+        if ($result['failed'] > 0) {
+            $this->addFlash('error', sprintf('%d relance(s) email n\'ont pas pu être envoyée(s). Vérifiez la configuration SMTP.', $result['failed']));
+        }
 
         return $this->redirectToRoute('app_courrier_show', ['id' => $courrier->getId()]);
     }
@@ -697,6 +759,7 @@ class CourrierController extends AbstractController
             'direction' => $query['direction'] ?? null,
             'dateFrom' => $this->queryScalar($query, 'dateFrom'),
             'dateTo' => $this->queryScalar($query, 'dateTo'),
+            'dueFilter' => $this->queryDueFilter($query),
             'assignedTo' => $assignedTo,
             'destinataire' => $destinataire,
             'pendingDeletion' => $this->isGranted('ROLE_ADMIN') && $request->query->getBoolean('pendingDeletion'),
@@ -743,6 +806,24 @@ class CourrierController extends AbstractController
         }
 
         return array_values(array_filter($value, static fn (mixed $item): bool => $item instanceof User));
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function queryDueFilter(array $query): ?string
+    {
+        $dueFilter = $this->queryScalar($query, 'dueFilter');
+
+        return $dueFilter && in_array($dueFilter, CourrierRepository::DUE_FILTERS, true) ? $dueFilter : null;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function dueFilterLabels(): array
+    {
+        return array_flip(self::DUE_FILTER_CHOICES);
     }
 
     /**

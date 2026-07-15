@@ -15,6 +15,7 @@
     {% set selectedStatuses = filters.status is defined and filters.status is iterable ? filters.status : (filters.status|default('') ? [filters.status] : []) %}
     {% set selectedDirections = filters.direction is defined and filters.direction is iterable ? filters.direction : (filters.direction|default('') ? [filters.direction] : []) %}
     {% set selectedAssignedToIds = filters.assignedTo is defined and filters.assignedTo is iterable ? filters.assignedTo : (filters.assignedTo|default('') ? [filters.assignedTo] : []) %}
+    {% set selectedDueFilter = filters.dueFilter|default('') %}
 
     <div class="topbar page-band">
         <div>
@@ -62,11 +63,12 @@
         direction: selectedDirections,
         dateFrom: filters.dateFrom|default(''),
         dateTo: filters.dateTo|default(''),
+        dueFilter: selectedDueFilter,
         assignedTo: showAssignedFilter ? selectedAssignedToIds : [],
         destinataire: filters.destinataire|default(''),
         pendingDeletion: filters.pendingDeletion|default('')
     } %}
-    {% set hasAdvancedFilters = filters.sender|default('') or selectedStatuses|length > 0 or selectedDirections|length > 0 or filters.dateFrom|default('') or filters.dateTo|default('') or (showAssignedFilter and selectedAssignedToIds|length > 0) %}
+    {% set hasAdvancedFilters = filters.sender|default('') or selectedStatuses|length > 0 or selectedDirections|length > 0 or filters.dateFrom|default('') or filters.dateTo|default('') or selectedDueFilter or (showAssignedFilter and selectedAssignedToIds|length > 0) %}
     {% set hasActiveFilters = filters.q|default('') or hasAdvancedFilters or filters.destinataire|default('') or filters.pendingDeletion|default('') %}
 
     <form class="form-panel filter-panel" method="get" action="{{ path(listRoute) }}">
@@ -118,6 +120,15 @@
                 <div>
                     <label for="dateTo">Au</label>
                     <input type="date" id="dateTo" name="dateTo" value="{{ filters.dateTo|default('') }}">
+                </div>
+                <div>
+                    <label for="dueFilter">Échéance</label>
+                    <select id="dueFilter" name="dueFilter">
+                        <option value="">Toutes les échéances</option>
+                        {% for label, value in dueFilters %}
+                            <option value="{{ value }}" {{ selectedDueFilter == value ? 'selected' : '' }}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
                 {% if showAssignedFilter %}
                     <div>
@@ -174,6 +185,12 @@
                         <a class="filter-chip__remove" href="{{ path(listRoute, activeFilterParams|merge({dateFrom: '', dateTo: ''})) }}" aria-label="Retirer le filtre période">×</a>
                     </span>
                 {% endif %}
+                {% if selectedDueFilter %}
+                    <span class="filter-chip">
+                        {{ dueFilterLabels[selectedDueFilter]|default(selectedDueFilter) }}
+                        <a class="filter-chip__remove" href="{{ path(listRoute, activeFilterParams|merge({dueFilter: ''})) }}" aria-label="Retirer le filtre échéance">×</a>
+                    </span>
+                {% endif %}
                 {% if showAssignedFilter and selectedAssignedUsers|length > 0 %}
                     {% for assignedUser in selectedAssignedUsers %}
                         <span class="filter-chip">
@@ -224,6 +241,7 @@
         direction: selectedDirections,
         dateFrom: filters.dateFrom|default(''),
         dateTo: filters.dateTo|default(''),
+        dueFilter: selectedDueFilter,
         assignedTo: selectedAssignedToIds,
         destinataire: filters.destinataire|default(''),
         pendingDeletion: filters.pendingDeletion|default('')
@@ -238,6 +256,7 @@
                     <th>Nature</th>
                     <th>Objet</th>
                     <th>Interlocuteur</th>
+                    <th>Échéance</th>
                     <th>Statut</th>
                     <th class="table-actions-heading">Actions</th>
                 </tr>
@@ -259,6 +278,16 @@
                         </a>
                     </td>
                     <td class="table-cell--long" data-label="Interlocuteur"><span class="cell-truncate">{{ courrier.interlocuteurLabel }}</span></td>
+                    <td data-label="Échéance">
+                        {% if courrier.responseDueAt %}
+                            {% set dueTimestamp = courrier.responseDueAt|date('U') %}
+                            {% set todayTimestamp = 'today'|date('U') %}
+                            {% set dueState = dueTimestamp < todayTimestamp ? 'is-overdue' : (dueTimestamp == todayTimestamp ? 'is-today' : '') %}
+                            <span class="record-due {{ dueState }}">{{ courrier.responseDueAt|date('d/m/Y') }}</span>
+                        {% else %}
+                            <span class="muted">Non renseignée</span>
+                        {% endif %}
+                    </td>
                     <td data-label="Statut"><span class="badge {{ courrier.status }}">{{ statusLabels[courrier.status]|default(courrier.statusLabel) }}</span></td>
                     <td class="table-actions-cell" data-label="Actions">
                         <div class="row-actions">
@@ -291,7 +320,7 @@
                 </tr>
             {% else %}
                 <tr class="table-empty-row">
-                    <td colspan="7">
+                    <td colspan="8">
                         <div class="empty-state empty-state--table">
                             <span class="empty-state__icon" aria-hidden="true">
                                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
