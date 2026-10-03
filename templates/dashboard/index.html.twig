@@ -161,18 +161,6 @@
             </span>
             <strong>{{ statusStats.en_cours }}</strong>
         </a>
-        <a class="card stat stat--done {{ filters.status|default('') == 'traite' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({status: 'traite'})) }}" data-loading-skeleton>
-            <span class="stat__head">
-                <span class="stat__label">{{ statusLabels.traite|default('Traités') }}</span>
-                <span class="stat__icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M9 12l2 2 4-4"/>
-                        <circle cx="12" cy="12" r="9"/>
-                    </svg>
-                </span>
-            </span>
-            <strong>{{ statusStats.traite }}</strong>
-        </a>
         <a class="card stat stat--urgent {{ filters.status|default('') == 'urgent' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({status: 'urgent'})) }}" data-loading-skeleton>
             <span class="stat__head">
                 <span class="stat__label">{{ statusLabels.urgent|default('Urgents') }}</span>
