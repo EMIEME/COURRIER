@@ -38,6 +38,7 @@ class DashboardController extends AbstractController
 
         return $this->render('dashboard/index.html.twig', [
             'filters' => $request->query->all(),
+            'totalRegisteredCourriers' => $courrierRepository->count([]),
             'statusStats' => $courrierRepository->countByStatus($periodFilters),
             'directionStats' => $courrierRepository->countByDirection($periodFilters),
             'urgentCourriers' => $courrierRepository->searchPaginated([...$periodFilters, 'status' => Courrier::STATUS_URGENT, 'prioritizeUrgent' => true], 1, 6),

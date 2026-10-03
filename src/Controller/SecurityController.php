@@ -2,9 +2,12 @@
 
 namespace App\Controller;
 
+use App\Entity\User;
+use App\Form\ChangePasswordType;
 use App\Form\ForgotPasswordRequestType;
 use App\Form\ResetPasswordType;
 use App\Repository\UserRepository;
+use App\Repository\CourrierRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -25,6 +28,36 @@ use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 class SecurityController extends AbstractController
 {
     private const PASSWORD_RESET_TOKEN_TTL = 3600;
+
+    #[Route('/account/change-password', name: 'app_change_password', methods: ['GET', 'POST'])]
+    #[Route('/account/profile', name: 'app_profile', methods: ['GET', 'POST'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function changePassword(Request $request, UserPasswordHasherInterface $passwordHasher, EntityManagerInterface $entityManager, CourrierRepository $courrierRepository): Response
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $form = $this->createForm(ChangePasswordType::class);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $user->setPassword($passwordHasher->hashPassword($user, (string) $form->get('plainPassword')->getData()));
+            $user->clearPasswordReset();
+            $entityManager->flush();
+
+            $this->addFlash('success', 'Votre mot de passe a été modifié.');
+
+            return $this->redirectToRoute('app_profile');
+        }
+
+        return $this->render('security/change_password.html.twig', [
+            'form' => $form,
+            'profile' => $user,
+            'registeredCourriersCount' => $courrierRepository->count(['createdBy' => $user]),
+        ]);
+    }
 
     #[Route('/login', name: 'app_login')]
     public function login(AuthenticationUtils $authenticationUtils): Response|RedirectResponse

@@ -543,6 +543,35 @@
                 .stat--urgent .stat__icon { background: rgba(180, 35, 24, 0.12); color: #b42318; }
                 .stat--progress.active { box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.24), var(--shadow); }
                 .stat--urgent.active { box-shadow: 0 0 0 2px rgba(180, 35, 24, 0.22), var(--shadow); }
+                .grid.dashboard-stats {
+                    grid-template-columns: repeat(7, minmax(0, 1fr));
+                    gap: 10px;
+                }
+                .dashboard-stats .stat {
+                    min-width: 0;
+                    padding: 14px 12px;
+                    gap: 10px;
+                    grid-template-rows: 1fr auto 16px;
+                    border-left-width: 4px;
+                }
+                .dashboard-stats .stat__head { flex-direction: column; gap: 8px; }
+                .dashboard-stats .stat__icon { order: -1; }
+                .dashboard-stats .stat__label {
+                    font-size: 16px;
+                    line-height: 1.35;
+                    min-height: 2.7em;
+                    overflow-wrap: break-word;
+                }
+                .dashboard-stats .stat strong { font-size: clamp(24px, 2.3vw, 32px); overflow-wrap: anywhere; }
+                .dashboard-stats .stat__note { color: var(--muted); font-size: 11px; line-height: 16px; }
+                .stat--total { background: #f0f4f8; border-left-color: #334155; }
+                .stat--total .stat__icon { background: #e2e8f0; color: #334155; }
+                @media (max-width: 920px) {
+                    .grid.dashboard-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+                }
+                @media (max-width: 540px) {
+                    .grid.dashboard-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+                }
 
                 .table-wrap {
                     position: relative;
@@ -911,6 +940,22 @@
                 }
 
                 .form-panel { padding: 18px; }
+                .profile-layout { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: 24px; align-items: start; max-width: 1100px; }
+                .profile-layout .form-panel { padding: 28px; border-radius: 14px; }
+                .profile-identity { display: flex; align-items: center; gap: 16px; padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
+                .profile-identity h2 { margin: 0; font-size: 22px; overflow-wrap: anywhere; }
+                .profile-identity p { margin: 4px 0 0; color: var(--muted); }
+                .profile-avatar { display: grid; place-items: center; flex: 0 0 58px; height: 58px; border-radius: 16px; background: #edf7e9; color: var(--primary-strong); font-size: 26px; font-weight: 750; }
+                .profile-details { display: grid; gap: 18px; margin: 20px 0 24px; }
+                .profile-details dt { font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+                .profile-details dd { margin: 0; font-weight: 650; overflow-wrap: anywhere; }
+                .profile-activity { padding: 20px; background: #edf7e9; border: 1px solid #d6eacb; border-radius: 12px; }
+                .profile-activity > span { font-weight: 650; color: var(--primary-strong); }
+                .profile-activity strong { display: block; font-size: 40px; line-height: 1.2; margin: 10px 0; color: var(--primary-strong); }
+                .profile-activity p { margin: 0; font-size: 12px; color: var(--muted); }
+                .profile-password .professional-form { margin-top: 24px; }
+                @media (max-width: 1100px) { .profile-layout { grid-template-columns: minmax(0, 1fr); } }
+                @media (max-width: 540px) { .profile-layout .form-panel { padding: 20px; } }
                 .courrier-form-panel {
                     max-width: 1180px;
                 }
@@ -1347,6 +1392,11 @@
                     background: #fff2cf;
                     border-color: #f0c36d;
                     color: var(--warning);
+                }
+                .record-due.is-done {
+                    background: #edf8f1;
+                    border-color: #b8dcc5;
+                    color: var(--success);
                 }
                 .record-meta-grid {
                     display: grid;
@@ -2647,6 +2697,7 @@
                             <strong>{{ app.user.fullName }}</strong><br>
                             <span>{{ app.user.email }}</span>
                             <div style="margin-top: 14px;">
+                                <a class="button secondary" style="margin-bottom: 6px;" href="{{ path('app_profile') }}">Mon profil</a>
                                 <a class="button secondary" href="{{ path('app_logout') }}">Déconnexion</a>
                             </div>
                         </div>

@@ -14,7 +14,7 @@
     {% set isPreviewablePdf = attachmentExtension == 'pdf' %}
     {% set dueTimestamp = courrier.responseDueAt ? courrier.responseDueAt|date('U') : null %}
     {% set todayTimestamp = 'today'|date('U') %}
-    {% set dueState = dueTimestamp and dueTimestamp < todayTimestamp ? 'is-overdue' : (dueTimestamp == todayTimestamp ? 'is-today' : '') %}
+    {% set dueState = courrier.status == 'traite' ? 'is-done' : (dueTimestamp and dueTimestamp < todayTimestamp ? 'is-overdue' : (dueTimestamp == todayTimestamp ? 'is-today' : '')) %}
 
     <div class="topbar page-band">
         <div>

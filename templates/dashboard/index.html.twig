@@ -97,7 +97,20 @@
         {% endif %}
     </form>
 
-    <section class="grid stats">
+    <section class="grid stats dashboard-stats" aria-label="Statistiques des courriers">
+        <div class="card stat stat--total">
+            <span class="stat__head">
+                <span class="stat__label">Total enregistré</span>
+                <span class="stat__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="5" width="18" height="14" rx="2"/>
+                        <path d="m3 7 9 6 9-6"/>
+                    </svg>
+                </span>
+            </span>
+            <strong>{{ totalRegisteredCourriers|number_format(0, ',', ' ') }}</strong>
+            <span class="stat__note">Depuis le début</span>
+        </div>
         <a class="card stat stat--received {{ filters.direction|default('') == 'entrant' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({direction: 'entrant'})) }}" data-loading-skeleton>
             <span class="stat__head">
                 <span class="stat__label">{{ directionLabels.entrant|default('Arrivé') }}</span>
