@@ -201,6 +201,12 @@ class CourrierController extends AbstractController
             $usersToNotify = $this->assignmentNotificationRecipients($courrier, [], $courrier->getStatus());
             $entityManager->flush();
             $this->notifyAssignmentIfNeeded($assignmentNotifier, $courrier, $usersToNotify);
+            if (Courrier::STATUS_URGENT === $courrier->getStatus()) {
+                $result = $assignmentNotifier->notifyUrgentStatus($courrier, $courrier->getAssignedTo(), false);
+                if ($result['failed'] > 0) {
+                    $this->addFlash('error', sprintf('%d notification(s) email n\'ont pas pu être envoyée(s). Vérifiez la configuration SMTP.', $result['failed']));
+                }
+            }
 
             $this->addFlash('success', 'Le courrier a été enregistré.');
 

@@ -61,7 +61,7 @@ class CourrierAssignmentNotifier
      *
      * @return array{sent: int, failed: int}
      */
-    public function notifyUrgentStatus(Courrier $courrier, iterable $users): array
+    public function notifyUrgentStatus(Courrier $courrier, iterable $users, bool $automatic = true): array
     {
         if (Courrier::STATUS_URGENT !== $courrier->getStatus()) {
             return ['sent' => 0, 'failed' => 0];
@@ -73,7 +73,7 @@ class CourrierAssignmentNotifier
 
         foreach ($recipients as $recipient) {
             try {
-                $this->mailer->send($this->buildUrgentEmail($courrier, $recipient));
+                $this->mailer->send($this->buildUrgentEmail($courrier, $recipient, $automatic));
                 ++$sent;
             } catch (\Throwable $exception) {
                 ++$failed;
@@ -148,8 +148,8 @@ class CourrierAssignmentNotifier
             ->from(new Address($this->fromAddress, $this->fromName))
             ->to(new Address((string) $recipient->getEmail(), $recipient->getFullName() ?: (string) $recipient->getEmail()))
             ->subject(sprintf('Courrier imputé en cours - %s', $courrier->getReference()))
-            ->text($this->buildTextBody($courrier, $recipient, $url))
-            ->html($this->buildHtmlBody($courrier, $recipient, $url));
+            ->text($this->buildTextBody($courrier, $url))
+            ->html($this->buildHtmlBody($courrier, $url));
 
         if ('' !== trim($this->replyToAddress)) {
             $email->replyTo(new Address($this->replyToAddress, $this->fromName));
@@ -160,7 +160,7 @@ class CourrierAssignmentNotifier
         return $email;
     }
 
-    private function buildUrgentEmail(Courrier $courrier, User $recipient): Email
+    private function buildUrgentEmail(Courrier $courrier, User $recipient, bool $automatic): Email
     {
         $url = $this->urlGenerator->generate('app_courrier_show', ['id' => $courrier->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
 
@@ -168,12 +168,14 @@ class CourrierAssignmentNotifier
             ->from(new Address($this->fromAddress, $this->fromName))
             ->to(new Address((string) $recipient->getEmail(), $recipient->getFullName() ?: (string) $recipient->getEmail()))
             ->subject(sprintf('Courrier urgent - %s', $courrier->getReference()))
-            ->text($this->buildUrgentTextBody($courrier, $recipient, $url))
-            ->html($this->buildUrgentHtmlBody($courrier, $recipient, $url));
+            ->text($this->buildUrgentTextBody($courrier, $url, $automatic))
+            ->html($this->buildUrgentHtmlBody($courrier, $url, $automatic));
 
         if ('' !== trim($this->replyToAddress)) {
             $email->replyTo(new Address($this->replyToAddress, $this->fromName));
         }
+
+        $this->attachCourrierFile($email, $courrier);
 
         return $email;
     }
@@ -186,8 +188,8 @@ class CourrierAssignmentNotifier
             ->from(new Address($this->fromAddress, $this->fromName))
             ->to(new Address((string) $recipient->getEmail(), $recipient->getFullName() ?: (string) $recipient->getEmail()))
             ->subject(sprintf('Relance courrier - %s', $courrier->getReference()))
-            ->text($this->buildReminderTextBody($courrier, $recipient, $sender, $url))
-            ->html($this->buildReminderHtmlBody($courrier, $recipient, $sender, $url));
+            ->text($this->buildReminderTextBody($courrier, $sender, $url))
+            ->html($this->buildReminderHtmlBody($courrier, $sender, $url));
 
         if ('' !== trim($this->replyToAddress)) {
             $email->replyTo(new Address($this->replyToAddress, $this->fromName));
@@ -230,11 +232,9 @@ class CourrierAssignmentNotifier
         return is_file($attachmentRealPath) ? $attachmentRealPath : null;
     }
 
-    private function buildTextBody(Courrier $courrier, User $recipient, string $url): string
+    private function buildTextBody(Courrier $courrier, string $url): string
     {
         $lines = [
-            sprintf('Bonjour %s,', $recipient->getFullName() ?: $recipient->getEmail()),
-            '',
             'Un courrier nécessitant une réponse vous a été imputé.',
             '',
             sprintf('Référence: %s', $courrier->getReference()),
@@ -251,13 +251,12 @@ class CourrierAssignmentNotifier
         return implode("\n", $lines);
     }
 
-    private function buildHtmlBody(Courrier $courrier, User $recipient, string $url): string
+    private function buildHtmlBody(Courrier $courrier, string $url): string
     {
         $escape = static fn (?string $value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
         return sprintf(
-            '<p>Bonjour %s,</p><p>Un courrier nécessitant une réponse vous a été imputé.</p><ul><li><strong>Référence:</strong> %s</li><li><strong>Objet:</strong> %s</li><li><strong>Nature:</strong> %s</li><li><strong>Date du courrier:</strong> %s</li><li><strong>Interlocuteur:</strong> %s</li><li><strong>Échéance de réponse:</strong> %s</li><li><strong>Suivi / réponse:</strong> %s</li></ul><p>Voir le service Courrier pour toute information complémentaire.</p>',
-            $escape($recipient->getFullName() ?: $recipient->getEmail()),
+            '<p>Un courrier nécessitant une réponse vous a été imputé.</p><ul><li><strong>Référence:</strong> %s</li><li><strong>Objet:</strong> %s</li><li><strong>Nature:</strong> %s</li><li><strong>Date du courrier:</strong> %s</li><li><strong>Interlocuteur:</strong> %s</li><li><strong>Échéance de réponse:</strong> %s</li><li><strong>Suivi / réponse:</strong> %s</li></ul><p>Voir le service Courrier pour toute information complémentaire.</p>',
             $escape($courrier->getReference()),
             $escape($courrier->getSubject()),
             $escape($courrier->getDirectionLabel()),
@@ -268,12 +267,12 @@ class CourrierAssignmentNotifier
         );
     }
 
-    private function buildUrgentTextBody(Courrier $courrier, User $recipient, string $url): string
+    private function buildUrgentTextBody(Courrier $courrier, string $url, bool $automatic): string
     {
         $lines = [
-            sprintf('Bonjour %s,', $recipient->getFullName() ?: $recipient->getEmail()),
-            '',
-            'Un courrier qui vous est imputé est passé automatiquement en urgent, car son échéance de réponse est dépassée.',
+            $automatic
+                ? 'Un courrier qui vous est imputé est passé automatiquement en urgent, car son échéance de réponse est dépassée.'
+                : 'Un courrier urgent vous a été imputé.',
             '',
             sprintf('Référence: %s', $courrier->getReference()),
             sprintf('Objet: %s', $courrier->getSubject()),
@@ -290,13 +289,15 @@ class CourrierAssignmentNotifier
         return implode("\n", $lines);
     }
 
-    private function buildUrgentHtmlBody(Courrier $courrier, User $recipient, string $url): string
+    private function buildUrgentHtmlBody(Courrier $courrier, string $url, bool $automatic): string
     {
         $escape = static fn (?string $value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
         return sprintf(
-            '<p>Bonjour %s,</p><p>Un courrier qui vous est imputé est passé automatiquement en urgent, car son échéance de réponse est dépassée.</p><ul><li><strong>Référence:</strong> %s</li><li><strong>Objet:</strong> %s</li><li><strong>Nature:</strong> %s</li><li><strong>Date du courrier:</strong> %s</li><li><strong>Interlocuteur:</strong> %s</li><li><strong>Échéance de réponse:</strong> %s</li><li><strong>Suivi / réponse:</strong> %s</li></ul><p><a href="%s">Ouvrir le courrier</a></p><p>Voir le service Courrier pour toute information complémentaire.</p>',
-            $escape($recipient->getFullName() ?: $recipient->getEmail()),
+            '<p>%s</p><ul><li><strong>Référence:</strong> %s</li><li><strong>Objet:</strong> %s</li><li><strong>Nature:</strong> %s</li><li><strong>Date du courrier:</strong> %s</li><li><strong>Interlocuteur:</strong> %s</li><li><strong>Échéance de réponse:</strong> %s</li><li><strong>Suivi / réponse:</strong> %s</li></ul><p><a href="%s">Ouvrir le courrier</a></p><p>Voir le service Courrier pour toute information complémentaire.</p>',
+            $escape($automatic
+                ? 'Un courrier qui vous est imputé est passé automatiquement en urgent, car son échéance de réponse est dépassée.'
+                : 'Un courrier urgent vous a été imputé.'),
             $escape($courrier->getReference()),
             $escape($courrier->getSubject()),
             $escape($courrier->getDirectionLabel()),
@@ -308,11 +309,9 @@ class CourrierAssignmentNotifier
         );
     }
 
-    private function buildReminderTextBody(Courrier $courrier, User $recipient, ?User $sender, string $url): string
+    private function buildReminderTextBody(Courrier $courrier, ?User $sender, string $url): string
     {
         $lines = [
-            sprintf('Bonjour %s,', $recipient->getFullName() ?: $recipient->getEmail()),
-            '',
             'Ceci est une relance concernant un courrier qui vous est imputé.',
             '',
             sprintf('Référence: %s', $courrier->getReference()),
@@ -337,7 +336,7 @@ class CourrierAssignmentNotifier
         return implode("\n", $lines);
     }
 
-    private function buildReminderHtmlBody(Courrier $courrier, User $recipient, ?User $sender, string $url): string
+    private function buildReminderHtmlBody(Courrier $courrier, ?User $sender, string $url): string
     {
         $escape = static fn (?string $value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $senderLine = $sender instanceof User
@@ -345,8 +344,7 @@ class CourrierAssignmentNotifier
             : '';
 
         return sprintf(
-            '<p>Bonjour %s,</p><p>Ceci est une relance concernant un courrier qui vous est imputé.</p><ul><li><strong>Référence:</strong> %s</li><li><strong>Objet:</strong> %s</li><li><strong>Nature:</strong> %s</li><li><strong>Date du courrier:</strong> %s</li><li><strong>Interlocuteur:</strong> %s</li><li><strong>Échéance de réponse:</strong> %s</li><li><strong>Statut:</strong> %s</li><li><strong>Suivi / réponse:</strong> %s</li></ul><p><a href="%s">Ouvrir le courrier</a></p>%s<p>Voir le service Courrier pour toute information complémentaire.</p>',
-            $escape($recipient->getFullName() ?: $recipient->getEmail()),
+            '<p>Ceci est une relance concernant un courrier qui vous est imputé.</p><ul><li><strong>Référence:</strong> %s</li><li><strong>Objet:</strong> %s</li><li><strong>Nature:</strong> %s</li><li><strong>Date du courrier:</strong> %s</li><li><strong>Interlocuteur:</strong> %s</li><li><strong>Échéance de réponse:</strong> %s</li><li><strong>Statut:</strong> %s</li><li><strong>Suivi / réponse:</strong> %s</li></ul><p><a href="%s">Ouvrir le courrier</a></p>%s<p>Voir le service Courrier pour toute information complémentaire.</p>',
             $escape($courrier->getReference()),
             $escape($courrier->getSubject()),
             $escape($courrier->getDirectionLabel()),
