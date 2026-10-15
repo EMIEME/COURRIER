@@ -51,7 +51,7 @@ class CourrierUrgencyUpdater
             ->setActor(null)
             ->setActionType(CourrierAction::TYPE_STATUS_CHANGED)
             ->setSummary('Statut passe automatiquement en urgent')
-            ->setDetails(sprintf("Avant: En cours\nApres: Urgent\nEcheance depassee: %s", $dueDate));
+            ->setDetails(sprintf("Avant: Nécessite une réponse\nApres: Urgent\nEcheance depassee: %s", $dueDate));
 
         $this->entityManager->persist($action);
     }

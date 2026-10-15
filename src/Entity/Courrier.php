@@ -29,7 +29,7 @@ class Courrier
     ];
 
     public const STATUSES = [
-        'En cours' => self::STATUS_EN_COURS,
+        'Nécessite une réponse' => self::STATUS_EN_COURS,
         'Traité' => self::STATUS_TRAITE,
         'Urgent' => self::STATUS_URGENT,
     ];

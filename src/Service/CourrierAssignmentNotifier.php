@@ -147,7 +147,7 @@ class CourrierAssignmentNotifier
         $email = (new Email())
             ->from(new Address($this->fromAddress, $this->fromName))
             ->to(new Address((string) $recipient->getEmail(), $recipient->getFullName() ?: (string) $recipient->getEmail()))
-            ->subject(sprintf('Courrier imputé en cours - %s', $courrier->getReference()))
+            ->subject(sprintf('Courrier imputé — Nécessite une réponse - %s', $courrier->getReference()))
             ->text($this->buildTextBody($courrier, $url))
             ->html($this->buildHtmlBody($courrier, $url));
 

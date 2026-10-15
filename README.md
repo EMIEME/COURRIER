@@ -103,7 +103,7 @@ Creer un utilisateur :
 php bin/console app:create-user utilisateur@example.com "mot-de-passe" --name="Nom Utilisateur" --role=ROLE_SECRETARIAT
 ```
 
-Marquer comme urgents les courriers en cours dont l'echeance est depassee :
+Marquer comme urgents les courriers nécessitant une réponse dont l'echeance est depassee :
 
 ```bash
 php bin/console app:courriers:mark-urgent

@@ -151,7 +151,7 @@
         </a>
         <a class="card stat stat--progress {{ filters.status|default('') == 'en_cours' ? 'active' : '' }}" href="{{ path('app_dashboard', periodParams|merge({status: 'en_cours'})) }}" data-loading-skeleton>
             <span class="stat__head">
-                <span class="stat__label">{{ statusLabels.en_cours|default('En cours') }}</span>
+                <span class="stat__label">{{ statusLabels.en_cours|default('Nécessite une réponse') }}</span>
                 <span class="stat__icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="9"/>

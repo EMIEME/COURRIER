@@ -8,7 +8,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'app:courriers:mark-urgent', description: 'Passe en urgent les courriers en cours dont l\'échéance de réponse est dépassée.')]
+#[AsCommand(name: 'app:courriers:mark-urgent', description: 'Passe en urgent les courriers nécessitant une réponse dont l\'échéance de réponse est dépassée.')]
 class MarkUrgentCourriersCommand extends Command
 {
     public function __construct(
